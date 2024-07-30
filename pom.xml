@@ -46,7 +46,7 @@
 		<dependency>
 			<groupId>io.github.awidesky</groupId>
 			<artifactId>ProcessExecutor</artifactId>
-			<version>0.0.31</version>
+			<version>0.0.32</version>
 		</dependency>
 	</dependencies>
 	<build>

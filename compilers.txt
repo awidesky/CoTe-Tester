@@ -1,0 +1,4 @@
+/opt/homebrew/bin/g++
+/opt/homebrew/opt/llvm/bin/clang++
+/usr/bin/g++
+/usr/bin/clang++
