@@ -99,8 +99,8 @@ public class CoTe implements Closeable {
 	}
 	
 	private String compile(File cpp) throws CompileErrorException {
-		String out = outputDir.getAbsolutePath() + File.separator + new SimpleDateFormat("yyyy-MM-dd-kk-mm-ss").format(new Date()) + cpp.getName() + ".out";
-		String[] command = { compiler, "--std=c++14", cpp.getAbsolutePath(), "-v", "-o", out };
+		File out = new File(outputDir, new SimpleDateFormat("yyyy-MM-dd-kk-mm-ss").format(new Date()) + cpp.getName() + ".out");
+		String[] command = { compiler, "--std=c++14", cpp.getAbsolutePath(), "-v", "-o", out.getAbsolutePath() };
 		logger.debug("Compiling with : " + Arrays.stream(command).collect(Collectors.joining(" ")));
 		StringLogger comp_logger = new StringLogger(true);
 		comp_logger.setPrintLogLevel(false);
@@ -110,14 +110,15 @@ public class CoTe implements Closeable {
 			SwingDialogs.error("Error while compiling " + cpp, "%e%", e, true);
 			throw null;
 		}
+		out.deleteOnExit();
 		
-		return out;
+		return out.getAbsolutePath();
 	}
 
-	public void test(File cpp) throws CompileErrorException {
+	public boolean test(File cpp) throws CompileErrorException {
 		logger.info("Problem : " + week + "_" + prob + " with " + cpp.getAbsolutePath());
 		String out = compile(cpp);
-		ioFiles.forEach(probFile -> {
+		return ioFiles.stream().map(probFile -> {
 			List<String> inFile;
 			List<String> outFile;
 			
@@ -128,7 +129,7 @@ public class CoTe implements Closeable {
 				outFile = Files.readAllLines(Paths.get(filename), Charset.forName(System.getProperty("native.encoding")));
 			} catch (IOException e) {
 				SwingDialogs.error("Unable to read io File : " + filename, "%e%", e, true);
-				return;
+				return false;
 			}
 			Logger processOut = lt.getLogger("[" + week + "_" + prob + " | out] ", Level.DEBUG); //TODO : debug 여부는 config.ini에서 결
 			Logger processIn = lt.getLogger("[" + week + "_" + prob + " | in ] ", Level.DEBUG); //TODO : debug 여부는 config.ini에서 결
@@ -150,17 +151,17 @@ public class CoTe implements Closeable {
 				SwingDialogs.error("Unable to run executable: " + out, "%e%", e, true);
 			}
 			processOut.info("Process done!");
-			diff(outFile.toArray(String[]::new), output.getString().split("\\R"));
-		});
+			return diff(outFile.toArray(String[]::new), output.getString().split("\\R"));
+		}).allMatch(Boolean::booleanValue);
 	}
 
-	private void diff(String[] original, String[] prog) {
+	private boolean diff(String[] original, String[] prog) {
 		if(original.length != prog.length) {
 			//TODO
 			System.out.println(original.length + "!=" + prog.length);
 			System.out.println("Program output :");
 			Arrays.stream(prog).forEach(System.out::println);
-			return;
+			return false;
 		}
 		
 		boolean correct = true;
@@ -178,6 +179,7 @@ public class CoTe implements Closeable {
 		
 		if(correct) System.out.println("Correct!");
 		else System.out.println("Wrong-answer!");
+		return correct;
 	}
 
 	@Override
