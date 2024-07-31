@@ -26,8 +26,6 @@ import io.github.awidesky.processExecutor.ProcessIO;
 
 public class CoTe {
 
-	private static String compiler = null;
-	private static List<String> compilerCandidates;
 	private static File root = new File("probs");
 	private static File outputDir = new File(root, "out");
 
@@ -38,16 +36,6 @@ public class CoTe {
 	private List<String> ioFiles;
 	private OutputStream logTo = System.out;
 	
-	static {
-		try {
-			compilerCandidates = Stream.concat(
-					Files.lines(Paths.get("compilers.txt")), 
-					Stream.of("g++", "clang++", "cl.exe", "cl++")
-					).toList();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
 	
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
@@ -61,7 +49,6 @@ public class CoTe {
 		this.week = week;
 		this.prob = prob;
 		File ios = new File(root + File.separator + "IO");
-		//TODO : debug : Arrays.stream(ios.listFiles()).map(File::getName).forEach(System.out::println);
 		ioFiles = Arrays.stream(ios.listFiles())
 				.filter(s -> s.getName().matches(week + "_" + prob + ".\\d.in"))
 				.map(File::getAbsolutePath)
@@ -70,41 +57,17 @@ public class CoTe {
 				.toList();
 		if(ioFiles.isEmpty()) {
 			throw new RuntimeException("Problem " + week + "_" + prob + " does not exists!");
-			//SwingDialogs.error("Problem does not exists!", "Problem " + week + "-" + prob + " does not exists!", null, true);
 		}
 
 		this.logLevel = logLevel;
 		logger = new SimpleLogger(logTo);
 		logger.setLogLevel(logLevel);
-		findCompiler();
 	}
 	
-	private void findCompiler() { //TODO : make this static?
-		if(compiler != null) return;
-		List<String> workingCompilers = compilerCandidates.stream().filter(c -> {
-			String[] command = { c, "--version" };
-			logger.info();
-			logger.debug("Testing Compiler with : " + Arrays.stream(command).collect(Collectors.joining(" ")));
-			try(Logger pl = new SimpleLogger(logTo)) {
-				pl.setPrefix("[Compiler test : " + c + "] ");
-				return ProcessExecutor.runNow(pl, new File("."), command ) == 0;
-			} catch (InterruptedException | ExecutionException | IOException e) {
-				//SwingDialogs.error("Error while checking " + c, "%e%", e, true);
-				if(e.getLocalizedMessage().endsWith("No such file or directory"))
-					logger.error(e.getLocalizedMessage());
-				else 
-					e.printStackTrace();
-				return false;
-			}
-		}).toList();
-		logger.info("Found compilers : " + workingCompilers.stream().collect(Collectors.joining(", ")));
-		logger.info(workingCompilers.get(0) + " will used.");
-		compiler = workingCompilers.get(0);
-	}
 	
 	private String compile(File cpp) throws CompileErrorException {
 		File out = new File(outputDir, new SimpleDateFormat("yyyy-MM-dd-kk-mm-ss").format(new Date()) + cpp.getName() + ".out");
-		String[] command = { compiler, "--std=c++14", cpp.getAbsolutePath(), "-v", "-o", out.getAbsolutePath() };
+		String[] command = { Compiler.getCompiler(), "--std=c++14", cpp.getAbsolutePath(), "-v", "-o", out.getAbsolutePath() };
 		logger.debug("Compiling with : " + Arrays.stream(command).collect(Collectors.joining(" ")));
 		StringLogger comp_logger = new StringLogger(true);
 		comp_logger.setPrintLogLevel(false);
@@ -136,10 +99,10 @@ public class CoTe {
 				return false;
 			}
 			Logger processOut = new SimpleLogger(logTo);
-			processOut.setPrefix("[" + week + "_" + prob + " | out] ");
+			processOut.setPrefix("[" + probFile.substring(probFile.lastIndexOf(File.separator) + 1) + " | out] ");
 			processOut.setLogLevel(logLevel); //TODO : debug 여부는 config.ini에서 결
 			Logger processIn = new SimpleLogger(logTo);
-			processIn.setPrefix("[" + week + "_" + prob + " | in ] ");
+			processIn.setPrefix("[" + probFile.substring(probFile.lastIndexOf(File.separator) + 1) + " | in ] ");
 			processIn.setLogLevel(logLevel);
 			
 			StringLogger output = new StringLogger(true);
