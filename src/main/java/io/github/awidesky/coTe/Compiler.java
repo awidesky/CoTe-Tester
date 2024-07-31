@@ -30,6 +30,7 @@ public class Compiler {
 					).toList();
 		} catch (IOException e) {
 			e.printStackTrace();
+			compilerCandidates = List.of("g++", "clang++", "cl.exe", "cl++");
 		}
 	}
 	
