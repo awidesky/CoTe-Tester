@@ -1,8 +1,8 @@
 package io.github.awidesky.coTe;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -16,7 +16,7 @@ import java.util.stream.Stream;
 
 import io.github.awidesky.coTe.exception.CompileErrorException;
 import io.github.awidesky.guiUtil.Logger;
-import io.github.awidesky.guiUtil.LoggerThread;
+import io.github.awidesky.guiUtil.SimpleLogger;
 import io.github.awidesky.guiUtil.StringLogger;
 import io.github.awidesky.guiUtil.SwingDialogs;
 import io.github.awidesky.guiUtil.level.Level;
@@ -24,19 +24,19 @@ import io.github.awidesky.processExecutor.ProcessExecutor;
 import io.github.awidesky.processExecutor.ProcessIO;
 
 
-public class CoTe implements Closeable {
+public class CoTe {
 
 	private static String compiler = null;
 	private static List<String> compilerCandidates;
-	private LoggerThread lt = new LoggerThread();
 	private static File root = new File("probs");
 	private static File outputDir = new File(root, "out");
-	
 
-	private Logger logger = lt.getLogger(null, Level.DEBUG);
+	private Logger logger;
+	private Level logLevel;
 	private int week;
 	private int prob;
 	private List<String> ioFiles;
+	private OutputStream logTo = System.out;
 	
 	static {
 		try {
@@ -55,6 +55,9 @@ public class CoTe implements Closeable {
 	}
 	
 	public CoTe(int week, int prob) {
+		this(week, prob, Level.INFO);
+	}
+	public CoTe(int week, int prob, Level logLevel) {
 		this.week = week;
 		this.prob = prob;
 		File ios = new File(root + File.separator + "IO");
@@ -69,32 +72,33 @@ public class CoTe implements Closeable {
 			throw new RuntimeException("Problem " + week + "_" + prob + " does not exists!");
 			//SwingDialogs.error("Problem does not exists!", "Problem " + week + "-" + prob + " does not exists!", null, true);
 		}
-		
-		lt.setLogDestination(System.out);
-		lt.start();
+
+		this.logLevel = logLevel;
+		logger = new SimpleLogger(logTo);
+		logger.setLogLevel(logLevel);
 		findCompiler();
 	}
 	
-	private void findCompiler() {
+	private void findCompiler() { //TODO : make this static?
 		if(compiler != null) return;
 		List<String> workingCompilers = compilerCandidates.stream().filter(c -> {
 			String[] command = { c, "--version" };
 			logger.info();
 			logger.debug("Testing Compiler with : " + Arrays.stream(command).collect(Collectors.joining(" ")));
-			try {
-				return ProcessExecutor.runNow(lt.getLogger("[Compiler test : " + c + "] "), new File("."), command ) == 0;
+			try(Logger pl = new SimpleLogger(logTo)) {
+				pl.setPrefix("[Compiler test : " + c + "] ");
+				return ProcessExecutor.runNow(pl, new File("."), command ) == 0;
 			} catch (InterruptedException | ExecutionException | IOException e) {
 				//SwingDialogs.error("Error while checking " + c, "%e%", e, true);
 				if(e.getLocalizedMessage().endsWith("No such file or directory"))
-					System.err.println(e.getLocalizedMessage());
+					logger.error(e.getLocalizedMessage());
 				else 
 					e.printStackTrace();
-				System.err.flush();
 				return false;
 			}
 		}).toList();
-		System.out.println("Found compilers : " + workingCompilers.stream().collect(Collectors.joining(", ")));
-		System.out.println(workingCompilers.get(0) + " will used.");
+		logger.info("Found compilers : " + workingCompilers.stream().collect(Collectors.joining(", ")));
+		logger.info(workingCompilers.get(0) + " will used.");
 		compiler = workingCompilers.get(0);
 	}
 	
@@ -131,8 +135,13 @@ public class CoTe implements Closeable {
 				SwingDialogs.error("Unable to read io File : " + filename, "%e%", e, true);
 				return false;
 			}
-			Logger processOut = lt.getLogger("[" + week + "_" + prob + " | out] ", Level.DEBUG); //TODO : debug 여부는 config.ini에서 결
-			Logger processIn = lt.getLogger("[" + week + "_" + prob + " | in ] ", Level.DEBUG); //TODO : debug 여부는 config.ini에서 결
+			Logger processOut = new SimpleLogger(logTo);
+			processOut.setPrefix("[" + week + "_" + prob + " | out] ");
+			processOut.setLogLevel(logLevel); //TODO : debug 여부는 config.ini에서 결
+			Logger processIn = new SimpleLogger(logTo);
+			processIn.setPrefix("[" + week + "_" + prob + " | in ] ");
+			processIn.setLogLevel(logLevel);
+			
 			StringLogger output = new StringLogger(true);
 			output.setPrintLogLevel(false);
 			ProcessIO procIO = new ProcessIO(
@@ -141,16 +150,14 @@ public class CoTe implements Closeable {
 					);
 			procIO.setStdin(inFile.stream().map(s -> { processIn.debug(s); return s; }));
 			try {
-				ProcessExecutor.run(List.of(
-						out
-						// "/Users/eugenehong/Test/echo.out"//TODO : delete!
-						), null, procIO).wait_all();
+				ProcessExecutor.run(List.of(out), null, procIO).wait_all();
+				processOut.info("Process done!");
 				processOut.close();
+				processIn.close();
 				output.close();
 			} catch (IOException | ExecutionException | InterruptedException e) {
 				SwingDialogs.error("Unable to run executable: " + out, "%e%", e, true);
 			}
-			processOut.info("Process done!");
 			return diff(outFile.toArray(String[]::new), output.getString().split("\\R"));
 		}).allMatch(Boolean::booleanValue);
 	}
@@ -158,33 +165,28 @@ public class CoTe implements Closeable {
 	private boolean diff(String[] original, String[] prog) {
 		if(original.length != prog.length) {
 			//TODO
-			System.out.println(original.length + "!=" + prog.length);
-			System.out.println("Program output :");
-			Arrays.stream(prog).forEach(System.out::println);
+			logger.info(original.length + "!=" + prog.length);
+			logger.info("Program output :");
+			Arrays.stream(prog).forEach(logger::info);
 			return false;
 		}
 		
 		boolean correct = true;
 		for(int i = 0; i < original.length; i++) {
 			if(!original[i].strip().equals(prog[i].strip())) {
-				System.out.println("In Line " + (i + 1));
-				System.out.println("Answer :");
-				System.out.println(original[i]);
-				System.out.println("Output :");
-				System.out.println(prog[i]);
-				System.out.println();
+				logger.info("In Line " + (i + 1));
+				logger.info("Answer :");
+				logger.info(original[i]);
+				logger.info("Output :");
+				logger.info(prog[i]);
+				logger.info();
 				correct = false;
 			}
 		}
 		
-		if(correct) System.out.println("Correct!");
-		else System.out.println("Wrong-answer!");
+		if(correct) logger.info("Correct!");
+		else logger.info("Wrong-answer!");
 		return correct;
 	}
 
-	@Override
-	public void close() {
-		lt.shutdown(5000);
-	}
-	
 }

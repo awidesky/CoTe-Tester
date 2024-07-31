@@ -19,7 +19,7 @@ class Test {
 	@BeforeAll
 	static void setUpBeforeClass() throws Exception {
 		//ProcessExecutor.runNow(new SimpleLogger(System.out, true), null, "echo", "$SHELL");
-		try (CoTe ct = new CoTe(1, 1)) {}
+		new CoTe(1, 1);
 		Files.list(Paths.get("probs/out")).parallel().forEach(t -> {
 			try {
 				Files.deleteIfExists(t);
@@ -51,7 +51,8 @@ class Test {
 					sc.close();
 					System.out.println("[INFO] Prob : " + (i + "_" + j));
 					System.out.flush();
-					try (CoTe ct = new CoTe(i, j)) {
+					CoTe ct = new CoTe(i, j);
+					try {
 						r = ct.test(f);
 					} catch (CompileErrorException e) {
 						System.err.println("[ERROR] Compile Error!");
