@@ -14,6 +14,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.swing.SwingUtilities;
+
 import io.github.awidesky.coTe.exception.CompileErrorException;
 import io.github.awidesky.guiUtil.Logger;
 import io.github.awidesky.guiUtil.SimpleLogger;
@@ -38,8 +40,7 @@ public class CoTe {
 	
 	
 	public static void main(String[] args) {
-		// TODO Auto-generated method stub
-
+		SwingUtilities.invokeLater(MainFrame::new);
 	}
 	
 	public CoTe(int week, int prob) {
