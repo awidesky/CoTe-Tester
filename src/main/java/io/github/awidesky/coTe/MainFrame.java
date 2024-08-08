@@ -95,9 +95,10 @@ public class MainFrame extends JFrame {
 
 	private List<IntPair> cotes;
 	private void setupCheckbox() {
-		cotes = Arrays.stream(new File(root, "test_codes").listFiles()) //TODO : search IO, not test code
-				.filter(f -> f.getName().endsWith(".cpp"))
+		cotes = Arrays.stream(new File(root, "IO").listFiles())
+				.filter(f -> f.getName().endsWith(".in"))
 				.map(File::getName)
+				.map(s -> s.replaceAll("\\.\\d\\.in", ""))
 				.map(IntPair::new)
 				.toList();
 		cotes.stream().mapToInt(IntPair::getWeek).distinct().sorted().mapToObj(String::valueOf).forEach(cb_week::addItem);
