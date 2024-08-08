@@ -95,7 +95,7 @@ public class MainFrame extends JFrame {
 
 	private List<IntPair> cotes;
 	private void setupCheckbox() {
-		cotes = Arrays.stream(new File(root, "test_codes").listFiles())
+		cotes = Arrays.stream(new File(root, "test_codes").listFiles()) //TODO : search IO, not test code
 				.filter(f -> f.getName().endsWith(".cpp"))
 				.map(File::getName)
 				.map(IntPair::new)
