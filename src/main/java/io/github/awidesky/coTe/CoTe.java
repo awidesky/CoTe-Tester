@@ -14,8 +14,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.swing.SwingUtilities;
-
 import io.github.awidesky.coTe.exception.CompileErrorException;
 import io.github.awidesky.guiUtil.Logger;
 import io.github.awidesky.guiUtil.SimpleLogger;
@@ -28,8 +26,7 @@ import io.github.awidesky.processExecutor.ProcessIO;
 
 public class CoTe {
 
-	private static File root = new File("probs");
-	private static File outputDir = new File(root, "out");
+	private static File outputDir = new File(MainFrame.getRoot(), "out");
 
 	private Logger logger;
 	private Level logLevel;
@@ -38,18 +35,13 @@ public class CoTe {
 	private List<String> ioFiles;
 	private OutputStream logTo = System.out;
 	
-	
-	public static void main(String[] args) {
-		SwingUtilities.invokeLater(MainFrame::new);
-	}
-	
 	public CoTe(int week, int prob) {
 		this(week, prob, Level.INFO);
 	}
 	public CoTe(int week, int prob, Level logLevel) {
 		this.week = week;
 		this.prob = prob;
-		File ios = new File(root + File.separator + "IO");
+		File ios = new File(MainFrame.getRoot(), "IO");
 		ioFiles = Arrays.stream(ios.listFiles())
 				.filter(s -> s.getName().matches(week + "_" + prob + ".\\d.in"))
 				.map(File::getAbsolutePath)
