@@ -3,7 +3,6 @@ package io.github.awidesky.coTe;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
@@ -89,9 +88,9 @@ public class CoTe {
 			
 			String filename = probFile + ".in";
 			try {
-				inFile = Stream.concat(Files.lines(Paths.get(filename), Charset.forName(System.getProperty("native.encoding"))), Stream.of("\n")).toList(); //TODO : use ProcessIO.NATIVECHARSET
+				inFile = Stream.concat(Files.lines(Paths.get(filename), ProcessIO.getNativeChearset()), Stream.of("\n")).toList(); //TODO : use ProcessIO.NATIVECHARSET
 				filename = probFile + ".out";
-				outFile = Files.readAllLines(Paths.get(filename), Charset.forName(System.getProperty("native.encoding")));
+				outFile = Files.readAllLines(Paths.get(filename), ProcessIO.getNativeChearset());
 			} catch (IOException e) {
 				SwingDialogs.error("Unable to read io File : " + filename, "%e%", e, true);
 				return false;
