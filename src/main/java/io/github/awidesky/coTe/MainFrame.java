@@ -1,14 +1,14 @@
 package io.github.awidesky.coTe;
 
 import java.awt.BorderLayout;
+import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -21,7 +21,13 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
+import io.github.awidesky.coTe.exception.CompileErrorException;
+import io.github.awidesky.guiUtil.SwingDialogs;
+
 public class MainFrame extends JFrame {
+
+	private static final long serialVersionUID = 252547593768742341L;
+	public static final String version = "1.0";
 
 	private static final Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
 	private static File root = new File("probs");
@@ -33,11 +39,17 @@ public class MainFrame extends JFrame {
 	private final JButton submit = new JButton("Submit");
 	private final JFileChooser jfc = new JFileChooser();
 	
+	private IntPair selected = null;
+	
 	public MainFrame() {
-		setTitle("CoTe-Tester");
+		setTitle("CoTe-Tester " + version);
+		System.out.println("CoTe-Tester v" + version);
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		setSize(500, 500);
 		setLayout(new BorderLayout(5, 5));
+
+		jfc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+		jfc.setFileFilter(new FileNameExtensionFilter(".cpp file", "cpp"));
 		
 		JPanel problemSelection = new JPanel();
 		cb_prob.setEnabled(false);
@@ -52,23 +64,30 @@ public class MainFrame extends JFrame {
 		
 		JPanel submitPanel = new JPanel();
 		show.setEnabled(false);
+		show.addActionListener(e -> {
+			File f= new File(root, "pdfs" + File.separator
+					+ selected.toString() + ".pdf");
+			try {
+				Desktop.getDesktop().open(f);
+			} catch (IOException e1) {
+				SwingDialogs.error("Cannot open " + f.getName(), "%e%", e1, false);
+			}
+		});
 		submit.setEnabled(false);
 		submit.addActionListener(this::submit);
 		submitPanel.add(show);
-		//submitPanel.add(Box.createHorizontalStrut(10));
 		submitPanel.add(submit);
 		add(submitPanel, BorderLayout.SOUTH);
 		
 		pack();
-		setLocation(dim.width / 2 - getSize().width, dim.height / 2 - getSize().height / 2);
+		setLocation((dim.width - getSize().width) / 2, (dim.height - getSize().height) / 2);
 		setVisible(true);
 	}
 
-	public static void main(String[] args) {
-		if(args.length != 0) root = new File(args[0]);
-		SwingUtilities.invokeLater(MainFrame::new);
+	private String getSelectedProb() {
+		return cb_week.getSelectedItem() + "_" + cb_prob.getSelectedItem();
 	}
-	
+
 	
 	public static File getRoot() {
 		return root;
@@ -101,57 +120,43 @@ public class MainFrame extends JFrame {
             cb_prob.setEnabled(true);
 		});
 		cb_prob.addActionListener(e -> {
-			boolean b = !((String)cb_prob.getSelectedItem()).equals("Prob");
-			show.setEnabled(b);
-			submit.setEnabled(b);
+			boolean selectSomething = !((String)cb_prob.getSelectedItem()).equals("Prob");
+			show.setEnabled(selectSomething);
+			submit.setEnabled(selectSomething);
+			
+			if(selectSomething) {
+				selected = new IntPair(getSelectedProb());
+			}
 		});
 	}
 	
 	public void submit(ActionEvent e) {
-		jfc.setMultiSelectionEnabled(true);
-		jfc.setFileSelectionMode(JFileChooser.FILES_ONLY);
-		jfc.setDialogTitle("Choose cpp files");
-		jfc.setFileFilter(new FileNameExtensionFilter(".cpp file", "cpp"));
-	}
-}
-
-
-class IntPair {
-	public int week;
-	public int prob;
-	
-	public IntPair(String str) {
-		Matcher m = Pattern.compile("\\D*(\\d+)\\D+(\\d+)\\D*").matcher(str);
-		if(!m.find()) System.out.println(str);;
-		week = Integer.parseInt(m.group(1));
-		prob = Integer.parseInt(m.group(2));
-	}
-
-	public int getWeek() {
-		return week;
-	}
-	public int getProb() {
-		return prob;
-	}
-	
-	@Override
-	public int hashCode() {
-		return week * 10 + prob;
-	}
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (obj instanceof IntPair other)
-			return prob == other.prob && week == other.week;
-		if (obj instanceof String other)
-			return other.equals(week + "\\D+" + prob);
-		if (obj instanceof Integer other)
-			return other == hashCode();
+		cb_prob.setEnabled(false);
+		cb_week.setEnabled(false);
+		show.setEnabled(false);
+		submit.setEnabled(false);
 		
-		return false;
+		jfc.setDialogTitle("Choose cpp file for : " + getSelectedProb());
+		if(jfc.showOpenDialog(null) != JFileChooser.APPROVE_OPTION) return;
+		CoTe c = new CoTe(selected);
+		boolean res = false;
+		try {
+			//TODO : run on separated thread to avoid deadlock
+			res = c.test(jfc.getSelectedFile());
+		} catch (CompileErrorException e1) {
+			SwingDialogs.error("Compile Error!", "%e%", e1, true);
+		}
+		SwingDialogs.information(selected.toString(), res ? "Correct!" : "Wrong Answer - check the log!", true);
+		
+		cb_prob.setEnabled(true);
+		cb_week.setEnabled(true);
+		show.setEnabled(true);
+		submit.setEnabled(true);
 	}
 	
+	
+	public static void main(String[] args) {
+		if(args.length != 0) root = new File(args[0]);
+		SwingUtilities.invokeLater(MainFrame::new);
+	}
 }

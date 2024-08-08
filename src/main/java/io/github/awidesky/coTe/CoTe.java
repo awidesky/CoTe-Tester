@@ -35,6 +35,12 @@ public class CoTe {
 	private List<String> ioFiles;
 	private OutputStream logTo = System.out;
 	
+	public CoTe(IntPair pair) {
+		this(pair.week, pair.prob);
+	}
+	public CoTe(IntPair pair, Level logLeve) {
+		this(pair.week, pair.prob, logLeve);
+	}
 	public CoTe(int week, int prob) {
 		this(week, prob, Level.INFO);
 	}
@@ -56,7 +62,6 @@ public class CoTe {
 		logger = new SimpleLogger(logTo);
 		logger.setLogLevel(logLevel);
 	}
-	
 	
 	private String compile(File cpp) throws CompileErrorException {
 		File out = new File(outputDir, new SimpleDateFormat("yyyy-MM-dd-kk-mm-ss").format(new Date()) + cpp.getName() + ".out");
