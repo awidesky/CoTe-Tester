@@ -2,7 +2,6 @@ package io.github.awidesky.coTe;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -11,18 +10,17 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import io.github.awidesky.guiUtil.ConsoleLogger;
 import io.github.awidesky.guiUtil.Logger;
-import io.github.awidesky.guiUtil.SimpleLogger;
 import io.github.awidesky.processExecutor.ProcessExecutor;
 
 public class Compiler {
 
 	private static String compiler = null;
-	private static final OutputStream logTo = System.out;
-	private static Logger logger = new SimpleLogger(logTo);
+	private static ConsoleLogger logger = new ConsoleLogger();
 	private static List<String> compilerCandidates;
 	static {
-		logger.setPrefix("[Compiler searcher] ");
+		logger.setPrefix("[Compiler test] ");
 		try {
 			compilerCandidates = Stream.concat(
 					Files.lines(Paths.get("compilers.txt")), 
@@ -35,8 +33,14 @@ public class Compiler {
 	}
 	
 	public static String getCompiler() {
-		if(compiler != null) return compiler;
-		else return (compiler = findCompiler());
+		if (compiler == null) {
+            synchronized (Compiler.class) {
+                if (compiler == null) {
+                	compiler = findCompiler();
+                }
+            }
+        }
+        return compiler;
 	}
 	
 	private static String findCompiler() {
@@ -45,7 +49,7 @@ public class Compiler {
 			String[] command = { c, "--version" };
 			logger.info();
 			logger.debug("Testing Compiler with : " + Arrays.stream(command).collect(Collectors.joining(" ")));
-			try(Logger pl = new SimpleLogger(logTo)) {
+			try(Logger pl = new ConsoleLogger()) {
 				pl.setPrefix("[Compiler test : " + c + "] ");
 				return ProcessExecutor.runNow(pl, new File("."), command ) == 0;
 			} catch (InterruptedException | ExecutionException | IOException e) {
