@@ -139,13 +139,15 @@ public class MainFrame extends JFrame {
 		
 		jfc.setDialogTitle("Choose cpp file for : " + getSelectedProb());
 		if(jfc.showOpenDialog(null) != JFileChooser.APPROVE_OPTION) return;
-		CoTe c = new CoTe(selected);
 		boolean res = false;
-		try {
+		try (CoTe c = new CoTe(selected)) {
 			//TODO : run on separated thread to avoid deadlock
 			res = c.test(jfc.getSelectedFile());
 		} catch (CompileErrorException e1) {
 			SwingDialogs.error("Compile Error!", "%e%", e1, true);
+		} catch (IOException e2) {
+			SwingDialogs.error("Failed to handle I/O!", "%e%", e2, true);
+			e2.printStackTrace();
 		}
 		SwingDialogs.information(selected.toString(), res ? "Correct!" : "Wrong Answer - check the log!", true);
 		

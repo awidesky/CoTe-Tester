@@ -3,7 +3,7 @@ package io.github.awidesky.coTe;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class IntPair {
+public class IntPair implements Comparable<IntPair> {
 	public int week;
 	public int prob;
 	
@@ -44,6 +44,13 @@ public class IntPair {
 	@Override
 	public String toString() {
 		return week + "_" + prob;
+	}
+
+	@Override
+	public int compareTo(IntPair o) {
+		int ret = week - o.week;
+		if(ret == 0) ret = prob - o.prob;
+		return ret;
 	}
 	
 }

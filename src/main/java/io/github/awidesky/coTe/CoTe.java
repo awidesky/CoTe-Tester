@@ -94,8 +94,8 @@ public class CoTe implements AutoCloseable {
 				SwingDialogs.error("Unable to read io File : " + filename, "%e%", e, true);
 				return false;
 			}
-			Logger processOut = new SimpleLogger(logTo);
-			processOut.setPrefix("[" + probFile.substring(probFile.lastIndexOf(File.separator) + 1) + " | out] ");
+			Logger processOut = new SimpleLogger(logTo); //TODO : use given logger
+			processOut.setPrefix(String.format("[%6s | out] ", probFile.substring(probFile.lastIndexOf(File.separator) + 1)));
 			processOut.setLogLevel(logLevel); //TODO : debug 여부는 config.ini에서 결
 			Logger processIn = new SimpleLogger(logTo);
 			processIn.setPrefix("[" + probFile.substring(probFile.lastIndexOf(File.separator) + 1) + " | in ] ");
@@ -147,7 +147,7 @@ public class CoTe implements AutoCloseable {
 		return correct;
 	}
 	@Override
-	public void close() throws Exception {
+	public void close() throws IOException {
 		logger.close();
 	}
 
