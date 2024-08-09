@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.github.awidesky.coTe.exception.CompileErrorException;
+import io.github.awidesky.guiUtil.ConsoleLogger;
 import io.github.awidesky.guiUtil.Logger;
 import io.github.awidesky.guiUtil.SimpleLogger;
 import io.github.awidesky.guiUtil.StringLogger;
@@ -23,12 +24,12 @@ import io.github.awidesky.processExecutor.ProcessExecutor;
 import io.github.awidesky.processExecutor.ProcessIO;
 
 
-public class CoTe {
+public class CoTe implements AutoCloseable {
 
 	private static File outputDir = new File(MainFrame.getRoot(), "out");
 
 	private Logger logger;
-	private Level logLevel;
+	private Level logLevel = Level.INFO;
 	private int week;
 	private int prob;
 	private List<String> ioFiles;
@@ -37,13 +38,7 @@ public class CoTe {
 	public CoTe(IntPair pair) {
 		this(pair.week, pair.prob);
 	}
-	public CoTe(IntPair pair, Level logLeve) {
-		this(pair.week, pair.prob, logLeve);
-	}
 	public CoTe(int week, int prob) {
-		this(week, prob, Level.INFO);
-	}
-	public CoTe(int week, int prob, Level logLevel) {
 		this.week = week;
 		this.prob = prob;
 		File ios = new File(MainFrame.getRoot(), "IO");
@@ -57,9 +52,13 @@ public class CoTe {
 			throw new RuntimeException("Problem " + week + "_" + prob + " does not exists!");
 		}
 
-		this.logLevel = logLevel;
-		logger = new SimpleLogger(logTo);
+		logger = new ConsoleLogger();
 		logger.setLogLevel(logLevel);
+	}
+	
+	public void setLogger(Logger logger, Level logLevel) {
+		this.logger = logger;
+		this.logLevel = logLevel;
 	}
 	
 	private String compile(File cpp) throws CompileErrorException {
@@ -124,7 +123,6 @@ public class CoTe {
 
 	private boolean diff(String[] original, String[] prog) {
 		if(original.length != prog.length) {
-			//TODO
 			logger.info(original.length + "!=" + prog.length);
 			logger.info("Program output :");
 			Arrays.stream(prog).forEach(logger::info);
@@ -147,6 +145,10 @@ public class CoTe {
 		if(correct) logger.info("Correct!");
 		else logger.info("Wrong-answer!");
 		return correct;
+	}
+	@Override
+	public void close() throws Exception {
+		logger.close();
 	}
 
 }
