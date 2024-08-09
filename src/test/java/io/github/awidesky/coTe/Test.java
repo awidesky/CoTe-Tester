@@ -5,21 +5,24 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Scanner;
-import java.util.regex.Pattern;
+import java.util.List;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
 import io.github.awidesky.coTe.exception.CompileErrorException;
+import io.github.awidesky.guiUtil.StringLogger;
+import io.github.awidesky.guiUtil.level.Level;
 
 class Test {
+	
+	private static final Level testLogLevel = Level.INFO;
 
 	@BeforeAll
 	static void setUpBeforeClass() throws Exception {
-		//ProcessExecutor.runNow(new SimpleLogger(System.out, true), null, "echo", "$SHELL");
-		new CoTe(1, 1);
+		Compiler.getCompiler();
+		System.out.println();
+		
 		Files.list(Paths.get("probs/out")).parallel().forEach(t -> {
 			try {
 				Files.deleteIfExists(t);
@@ -37,51 +40,58 @@ class Test {
 
 	@org.junit.jupiter.api.Test
 	void test() throws IOException {
-		Arrays.stream(new File("probs/test_codes").listFiles())
+		List<Result> res = Arrays.stream(new File("probs/test_codes").listFiles())
+				.parallel()
 				.filter(f -> f.getName().endsWith(".cpp"))
-				.sorted(Comparator.comparing(f -> {
-					return Integer.parseInt(f.getName().replaceAll("[_(\\.cpp)]", ""));
-				}))
 				.map(f -> {
-					Scanner sc = new Scanner(f.getName().replace(".cpp", ""));
-					sc.useDelimiter(Pattern.quote("_"));
-					int i = sc.nextInt();
-					int j = sc.nextInt();
+					StringLogger l = new StringLogger();
+					l.setPrintLogLevel(true);
+					IntPair p = new IntPair(f.getName());
 					boolean r = false;
-					sc.close();
-					System.out.println("[INFO] Prob : " + (i + "_" + j));
-					System.out.flush();
-					CoTe ct = new CoTe(i, j);
-					try {
+					
+					l.info("Prob : " + p.toString());
+					try (CoTe ct = new CoTe(p)) {
+						ct.setLogger(l, testLogLevel);
 						r = ct.test(f);
 					} catch (CompileErrorException e) {
-						System.err.println("[ERROR] Compile Error!");
-						e.printStackTrace();
+						l.error("Compile Error!");
+						l.error(e);
+					} catch (IOException e1) {
+						l.error(e1);
 					}
-					System.out.println();
-					return new Result(i, j, r);
+					l.newLine();
+					return new Result(p, r, l.getString());
 				})
-				.map(Result::toString)
-				.toList()
-				.forEach(System.out::println);
+				.sorted().toList();
+		
+		System.out.println();
+		res.forEach(Result::printLog);
+		System.out.println();
+		res.forEach(Result::printResult);
 	}
 
-	private class Result {
-		public final int week;
-		public final int prob;
+	private class Result implements Comparable<Result> {
+		public final IntPair probPair;
 		public final boolean correct;
+		public final String log;
 
-		public Result(int week, int prob, boolean correct) {
-			super();
-			this.week = week;
-			this.prob = prob;
+		public Result(IntPair prob, boolean correct, String log) {
+			this.probPair = prob;
 			this.correct = correct;
+			this.log = log;
+		}
+
+		public void printLog() {
+			System.out.println(log);
+		}
+		
+		public void printResult() {
+			System.out.printf("Week %2d, prob %d : %s\n", probPair.week, probPair.prob, correct ? "Correct" : "Wrong_answer");
 		}
 
 		@Override
-		public String toString() {
-			return "Week " + week + ", prob " + prob + " : " + (correct ? "Correct" : "Wrong_answer");
+		public int compareTo(Result o) {
+			return probPair.compareTo(o.probPair);
 		}
-		
 	}
 }
