@@ -9,6 +9,7 @@ import java.util.function.Consumer;
 
 import io.github.awidesky.coTe.exception.CompileErrorException;
 import io.github.awidesky.coTe.exception.CompileFailedException;
+import io.github.awidesky.coTe.exception.TimeOutException;
 import io.github.awidesky.guiUtil.ConsoleLogger;
 import io.github.awidesky.guiUtil.Logger;
 import io.github.awidesky.guiUtil.SwingDialogs;
@@ -27,15 +28,18 @@ public class Worker {
 			} catch (CompileErrorException e1) {
 				res = "Compile Error!";
 				e1.getCompile_msg().lines().forEach(logger::error);
-				SwingDialogs.error(prob.toString() + " - Compile Error!", "%e%", e1, true);
+				SwingDialogs.error(prob.toString() + " - " + res, "%e%", e1, true);
 			} catch (CompileFailedException e2) {
 				res = "Compile Process Failed!";
-				logger.error(e2);
-				SwingDialogs.error(prob.toString() + " - Compile Process Failed!", "%e%", e2, true);
-			} catch (IOException e3) {
+				e2.getProcessOutput().lines().forEach(logger::error);
+				SwingDialogs.error(prob.toString() + " - " + res, "%e%", e2.getCause(), true);
+			} catch (TimeOutException e3) {
+				res = "Time limit!";
+				SwingDialogs.error(prob.toString() + " - " + res, "%e%", e3, true);
+			} catch (IOException e4) {
 				res = "Compile Process Failed!";
-				logger.error(e3);
-				SwingDialogs.error("Failed to handle I/O!", "%e%", e3, true);
+				logger.error(e4);
+				SwingDialogs.error("Failed to handle I/O!", "%e%", e4, true);
 			}
 			logger.info("[Result] " + prob.toString() + " : " + res);
 			logger.newLine();

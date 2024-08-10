@@ -10,22 +10,26 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.github.awidesky.coTe.exception.CompileErrorException;
 import io.github.awidesky.coTe.exception.CompileFailedException;
+import io.github.awidesky.coTe.exception.TimeOutException;
 import io.github.awidesky.guiUtil.ConsoleLogger;
 import io.github.awidesky.guiUtil.Logger;
 import io.github.awidesky.guiUtil.StringLogger;
 import io.github.awidesky.guiUtil.SwingDialogs;
 import io.github.awidesky.guiUtil.level.Level;
 import io.github.awidesky.processExecutor.ProcessExecutor;
+import io.github.awidesky.processExecutor.ProcessExecutor.ProcessHandle;
 import io.github.awidesky.processExecutor.ProcessIO;
 
 
 public class CoTe implements AutoCloseable {
 
+	private static final long processWaitSeconds = 10;
 	private static File outputDir = new File(MainFrame.getRoot(), "out");
 	static {
 		if(!outputDir.exists()) outputDir.mkdirs();
@@ -82,10 +86,11 @@ public class CoTe implements AutoCloseable {
 		return out.getAbsolutePath();
 	}
 
-	public boolean test(File cpp) throws CompileErrorException, CompileFailedException {
+	public boolean test(File cpp) throws CompileErrorException, CompileFailedException, TimeOutException {
 		logger.info("Problem : " + week + "_" + prob + " with " + cpp.getAbsolutePath());
 		String out = compile(cpp);
-		return ioFiles.stream().map(probFile -> {
+		boolean result = true;
+		for(String probFile : ioFiles) {
 			List<String> inFile;
 			List<String> outFile;
 			
@@ -99,7 +104,7 @@ public class CoTe implements AutoCloseable {
 				return false;
 			}
 			Logger processOut = logger.withMorePrefix(String.format("[%6s | out] ", probFile.substring(probFile.lastIndexOf(File.separator) + 1)), false);
-			processOut.setLogLevel(logger.getLogLevel()); //TODO : debug 여부는 config.ini에서 결
+			processOut.setLogLevel(logger.getLogLevel()); //TODO : debug 여부는 config.ini에서 결정
 			Logger processIn = logger.withMorePrefix("[" + probFile.substring(probFile.lastIndexOf(File.separator) + 1) + " | in ] ", false);
 			processIn.setLogLevel(logger.getLogLevel());
 			
@@ -111,16 +116,24 @@ public class CoTe implements AutoCloseable {
 					);
 			procIO.setStdin(inFile.stream().map(s -> { processIn.debug(s); return s; }));
 			try {
-				ProcessExecutor.run(List.of(out), null, procIO).wait_all();
+				ProcessHandle handle = ProcessExecutor.run(List.of(out), null, procIO);
+				if(!handle.getProcess().waitFor(processWaitSeconds , TimeUnit.SECONDS)) {
+					output.close();
+					throw new TimeOutException();
+				}
+				
+				handle.wait_all();
 				processOut.info("Process done!");
 				processOut.close();
 				processIn.close();
 				output.close();
 			} catch (IOException | ExecutionException | InterruptedException e) {
 				SwingDialogs.error("Unable to run executable: " + out, "%e%", e, true);
+				logger.error(e);
 			}
-			return diff(outFile.toArray(String[]::new), output.getString().split("\\R"));
-		}).allMatch(Boolean::booleanValue);
+			result = diff(outFile.toArray(String[]::new), output.getString().split("\\R"));
+		};
+		return result;
 	}
 
 	private boolean diff(String[] original, String[] prog) {

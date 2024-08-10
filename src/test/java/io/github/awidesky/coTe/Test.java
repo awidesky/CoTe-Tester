@@ -12,6 +12,7 @@ import org.junit.jupiter.api.BeforeAll;
 
 import io.github.awidesky.coTe.exception.CompileErrorException;
 import io.github.awidesky.coTe.exception.CompileFailedException;
+import io.github.awidesky.coTe.exception.TimeOutException;
 import io.github.awidesky.guiUtil.StringLogger;
 
 class Test {
@@ -54,10 +55,12 @@ class Test {
 					} catch (CompileErrorException e) {
 						l.error("Compile Error!");
 						l.error(e);
+					} catch (CompileFailedException e) {
+						l.error(e);
+					} catch (TimeOutException e) {
+						l.error(e);
 					} catch (IOException e1) {
 						l.error(e1);
-					} catch (CompileFailedException e) {
-						e.printStackTrace();
 					}
 					l.newLine();
 					return new Result(p, r, l.getString());
