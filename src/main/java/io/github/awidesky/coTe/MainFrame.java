@@ -23,6 +23,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 
 import io.github.awidesky.coTe.exception.CompileErrorException;
 import io.github.awidesky.guiUtil.SwingDialogs;
+import io.github.awidesky.guiUtil.level.Level;
 
 public class MainFrame extends JFrame {
 
@@ -158,8 +159,13 @@ public class MainFrame extends JFrame {
 	}
 	
 	
+	private static Level defaultLogLevel = Level.INFO;
+	public static Level getDefaultLogLevel() { return defaultLogLevel; }
 	public static void main(String[] args) {
-		if(args.length != 0) root = new File(args[0]);
+		for(String arg : args) {
+			if(arg.startsWith("--root=")) root = new File(arg.replace("--root=", ""));
+			else if(arg.startsWith("--logLevel=")) defaultLogLevel = Level.valueOf(arg.replace("--logLevel=", ""));
+		}
 		SwingUtilities.invokeLater(MainFrame::new);
 	}
 }

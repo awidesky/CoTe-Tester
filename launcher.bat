@@ -1,3 +1,3 @@
-java -jar ./CoTe.jar
+java -jar ./CoTe.jar --logLevel=INFO
 
 pause

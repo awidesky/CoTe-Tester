@@ -2,7 +2,6 @@ package io.github.awidesky.coTe;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
@@ -16,10 +15,8 @@ import java.util.stream.Stream;
 import io.github.awidesky.coTe.exception.CompileErrorException;
 import io.github.awidesky.guiUtil.ConsoleLogger;
 import io.github.awidesky.guiUtil.Logger;
-import io.github.awidesky.guiUtil.SimpleLogger;
 import io.github.awidesky.guiUtil.StringLogger;
 import io.github.awidesky.guiUtil.SwingDialogs;
-import io.github.awidesky.guiUtil.level.Level;
 import io.github.awidesky.processExecutor.ProcessExecutor;
 import io.github.awidesky.processExecutor.ProcessIO;
 
@@ -29,11 +26,9 @@ public class CoTe implements AutoCloseable {
 	private static File outputDir = new File(MainFrame.getRoot(), "out");
 
 	private Logger logger;
-	private Level logLevel = Level.INFO;
 	private int week;
 	private int prob;
 	private List<String> ioFiles;
-	private OutputStream logTo = System.out;
 	
 	public CoTe(IntPair pair) {
 		this(pair.week, pair.prob);
@@ -53,12 +48,11 @@ public class CoTe implements AutoCloseable {
 		}
 
 		logger = new ConsoleLogger();
-		logger.setLogLevel(logLevel);
+		logger.setLogLevel(MainFrame.getDefaultLogLevel());
 	}
 	
-	public void setLogger(Logger logger, Level logLevel) {
+	public void setLogger(Logger logger) {
 		this.logger = logger;
-		this.logLevel = logLevel;
 	}
 	
 	private String compile(File cpp) throws CompileErrorException {
@@ -94,12 +88,10 @@ public class CoTe implements AutoCloseable {
 				SwingDialogs.error("Unable to read io File : " + filename, "%e%", e, true);
 				return false;
 			}
-			Logger processOut = new SimpleLogger(logTo); //TODO : use given logger
-			processOut.setPrefix(String.format("[%6s | out] ", probFile.substring(probFile.lastIndexOf(File.separator) + 1)));
-			processOut.setLogLevel(logLevel); //TODO : debug 여부는 config.ini에서 결
-			Logger processIn = new SimpleLogger(logTo);
-			processIn.setPrefix("[" + probFile.substring(probFile.lastIndexOf(File.separator) + 1) + " | in ] ");
-			processIn.setLogLevel(logLevel);
+			Logger processOut = logger.withMorePrefix(String.format("[%6s | out] ", probFile.substring(probFile.lastIndexOf(File.separator) + 1)), false);
+			processOut.setLogLevel(logger.getLogLevel()); //TODO : debug 여부는 config.ini에서 결
+			Logger processIn = logger.withMorePrefix("[" + probFile.substring(probFile.lastIndexOf(File.separator) + 1) + " | in ] ", false);
+			processIn.setLogLevel(logger.getLogLevel());
 			
 			StringLogger output = new StringLogger(true);
 			output.setPrintLogLevel(false);

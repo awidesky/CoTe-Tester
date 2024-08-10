@@ -12,12 +12,9 @@ import org.junit.jupiter.api.BeforeAll;
 
 import io.github.awidesky.coTe.exception.CompileErrorException;
 import io.github.awidesky.guiUtil.StringLogger;
-import io.github.awidesky.guiUtil.level.Level;
 
 class Test {
 	
-	private static final Level testLogLevel = Level.INFO;
-
 	@BeforeAll
 	static void setUpBeforeClass() throws Exception {
 		Compiler.getCompiler();
@@ -51,7 +48,7 @@ class Test {
 					
 					l.info("Prob : " + p.toString());
 					try (CoTe ct = new CoTe(p)) {
-						ct.setLogger(l, testLogLevel);
+						ct.setLogger(l);
 						r = ct.test(f);
 					} catch (CompileErrorException e) {
 						l.error("Compile Error!");
