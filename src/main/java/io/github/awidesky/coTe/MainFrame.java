@@ -44,7 +44,7 @@ public class MainFrame extends JFrame {
 	
 	public MainFrame() {
 		setTitle("CoTe-Tester " + version);
-		System.out.println("CoTe-Tester v" + version);
+		System.out.println("\n\n\nCoTe-Tester v" + version);
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		setSize(500, 500);
 		setLayout(new BorderLayout(5, 5));
@@ -166,6 +166,7 @@ public class MainFrame extends JFrame {
 			if(arg.startsWith("--root=")) root = new File(arg.replace("--root=", ""));
 			else if(arg.startsWith("--logLevel=")) defaultLogLevel = Level.valueOf(arg.replace("--logLevel=", ""));
 		}
+		Compiler.getCompiler();
 		SwingUtilities.invokeLater(MainFrame::new);
 	}
 }
