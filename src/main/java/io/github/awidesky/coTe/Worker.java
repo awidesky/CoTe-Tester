@@ -8,6 +8,7 @@ import java.util.concurrent.Future;
 import java.util.function.Consumer;
 
 import io.github.awidesky.coTe.exception.CompileErrorException;
+import io.github.awidesky.coTe.exception.CompileFailedException;
 import io.github.awidesky.guiUtil.SwingDialogs;
 
 public class Worker {
@@ -23,10 +24,13 @@ public class Worker {
 				SwingDialogs.information(prob.toString(), res ? "Correct!" : "Wrong Answer - check the log!", true);
 			} catch (CompileErrorException e1) {
 				SwingDialogs.error(prob.toString() + " - Compile Error!", "%e%", e1, true);
-				e1.printStackTrace();
-			} catch (IOException e2) {
-				SwingDialogs.error("Failed to handle I/O!", "%e%", e2, true);
+				//e1.printStackTrace(); //do not invoke because output of compile process is already printed to console.
+			} catch (CompileFailedException e2) {
+				SwingDialogs.error(prob.toString() + " - Compile Process Failed!", "%e%", e2, true);
 				e2.printStackTrace();
+			} catch (IOException e3) {
+				SwingDialogs.error("Failed to handle I/O!", "%e%", e3, true);
+				e3.printStackTrace();
 			}
 			aftercallback.accept(res);
 		});

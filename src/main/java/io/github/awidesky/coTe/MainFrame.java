@@ -44,11 +44,11 @@ public class MainFrame extends JFrame {
 	
 	public MainFrame() {
 		setTitle("CoTe-Tester " + version);
-		System.out.println("\n\n\nCoTe-Tester v" + version);
+		System.out.println("\n\n\n\tCoTe-Tester v" + version);
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		setSize(500, 500);
 		setLayout(new BorderLayout(5, 5));
-		if(getDefaultLogLevel() == Level.DEBUG) SwingDialogs.setLogger(new ConsoleLogger(true));
+		if(getDefaultLogLevel().includes(Level.DEBUG)) SwingDialogs.setLogger(new ConsoleLogger(true));
 
 		jfc.setFileSelectionMode(JFileChooser.FILES_ONLY);
 		jfc.setFileFilter(new FileNameExtensionFilter(".cpp file", "cpp"));

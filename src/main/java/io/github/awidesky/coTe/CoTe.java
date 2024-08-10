@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -13,10 +14,12 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.github.awidesky.coTe.exception.CompileErrorException;
+import io.github.awidesky.coTe.exception.CompileFailedException;
 import io.github.awidesky.guiUtil.ConsoleLogger;
 import io.github.awidesky.guiUtil.Logger;
 import io.github.awidesky.guiUtil.StringLogger;
 import io.github.awidesky.guiUtil.SwingDialogs;
+import io.github.awidesky.guiUtil.level.Level;
 import io.github.awidesky.processExecutor.ProcessExecutor;
 import io.github.awidesky.processExecutor.ProcessIO;
 
@@ -24,6 +27,9 @@ import io.github.awidesky.processExecutor.ProcessIO;
 public class CoTe implements AutoCloseable {
 
 	private static File outputDir = new File(MainFrame.getRoot(), "out");
+	static {
+		//if(!outputDir.exists()) outputDir.mkdirs();
+	}
 
 	private Logger logger;
 	private int week;
@@ -55,24 +61,27 @@ public class CoTe implements AutoCloseable {
 		this.logger = logger;
 	}
 	
-	private String compile(File cpp) throws CompileErrorException {
+	private String compile(File cpp) throws CompileErrorException, CompileFailedException {
 		File out = new File(outputDir, new SimpleDateFormat("yyyy-MM-dd-kk-mm-ss").format(new Date()) + cpp.getName() + ".out");
-		String[] command = { Compiler.getCompiler(), "--std=c++14", cpp.getAbsolutePath(), "-v", "-o", out.getAbsolutePath() };
-		logger.debug("Compiling with : " + Arrays.stream(command).collect(Collectors.joining(" ")));
+		List<String> command = new ArrayList<>();
+		Stream.of(Compiler.getCompiler(), "--std=c++14", cpp.getAbsolutePath(), "-o", out.getAbsolutePath()).forEach(command::add);
+		if(MainFrame.getDefaultLogLevel().includes(Level.DEBUG)) command.add("-v");
+		
+		logger.debug("Compiling with : " + command.stream().collect(Collectors.joining(" ")));
 		StringLogger comp_logger = new StringLogger(true);
 		comp_logger.setPrintLogLevel(false);
 		try {
-			if(ProcessExecutor.runNow(comp_logger, new File("."), command) != 0) throw new CompileErrorException(comp_logger.getString());
+			if(ProcessExecutor.runNow(comp_logger, new File("."), command.toArray(String[]::new)) != 0) throw new CompileErrorException(comp_logger.getString());
 		} catch (InterruptedException | ExecutionException | IOException e) {
 			SwingDialogs.error("Error while compiling " + cpp, "%e%", e, true);
-			throw null;
+			throw new CompileFailedException(e);
 		}
 		out.deleteOnExit();
 		
 		return out.getAbsolutePath();
 	}
 
-	public boolean test(File cpp) throws CompileErrorException {
+	public boolean test(File cpp) throws CompileErrorException, CompileFailedException {
 		logger.info("Problem : " + week + "_" + prob + " with " + cpp.getAbsolutePath());
 		String out = compile(cpp);
 		return ioFiles.stream().map(probFile -> {
