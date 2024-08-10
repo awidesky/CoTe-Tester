@@ -21,7 +21,7 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
-import io.github.awidesky.coTe.exception.CompileErrorException;
+import io.github.awidesky.guiUtil.ConsoleLogger;
 import io.github.awidesky.guiUtil.SwingDialogs;
 import io.github.awidesky.guiUtil.level.Level;
 
@@ -48,6 +48,7 @@ public class MainFrame extends JFrame {
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		setSize(500, 500);
 		setLayout(new BorderLayout(5, 5));
+		if(getDefaultLogLevel() == Level.DEBUG) SwingDialogs.setLogger(new ConsoleLogger(true));
 
 		jfc.setFileSelectionMode(JFileChooser.FILES_ONLY);
 		jfc.setFileFilter(new FileNameExtensionFilter(".cpp file", "cpp"));
@@ -140,22 +141,15 @@ public class MainFrame extends JFrame {
 		
 		jfc.setDialogTitle("Choose cpp file for : " + getSelectedProb());
 		if(jfc.showOpenDialog(null) != JFileChooser.APPROVE_OPTION) return;
-		boolean res = false;
-		try (CoTe c = new CoTe(selected)) {
-			//TODO : run on separated thread to avoid deadlock
-			res = c.test(jfc.getSelectedFile());
-		} catch (CompileErrorException e1) {
-			SwingDialogs.error("Compile Error!", "%e%", e1, true);
-		} catch (IOException e2) {
-			SwingDialogs.error("Failed to handle I/O!", "%e%", e2, true);
-			e2.printStackTrace();
-		}
-		SwingDialogs.information(selected.toString(), res ? "Correct!" : "Wrong Answer - check the log!", true);
-		
-		cb_prob.setEnabled(true);
-		cb_week.setEnabled(true);
-		show.setEnabled(true);
-		submit.setEnabled(true);
+
+		Worker.submit(selected, jfc.getSelectedFile(), (result) -> {
+			SwingUtilities.invokeLater(() -> {
+				cb_prob.setEnabled(true);
+				cb_week.setEnabled(true);
+				show.setEnabled(true);
+				submit.setEnabled(true);
+			});
+		});
 	}
 	
 	

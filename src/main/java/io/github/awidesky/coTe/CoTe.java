@@ -81,7 +81,7 @@ public class CoTe implements AutoCloseable {
 			
 			String filename = probFile + ".in";
 			try {
-				inFile = Stream.concat(Files.lines(Paths.get(filename), ProcessIO.getNativeChearset()), Stream.of("\n")).toList(); //TODO : use ProcessIO.NATIVECHARSET
+				inFile = Stream.concat(Files.lines(Paths.get(filename), ProcessIO.getNativeChearset()), Stream.of("\n")).toList();
 				filename = probFile + ".out";
 				outFile = Files.readAllLines(Paths.get(filename), ProcessIO.getNativeChearset());
 			} catch (IOException e) {
