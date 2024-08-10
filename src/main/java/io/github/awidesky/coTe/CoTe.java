@@ -74,7 +74,7 @@ public class CoTe implements AutoCloseable {
 			if(ProcessExecutor.runNow(comp_logger, new File("."), command.toArray(String[]::new)) != 0) throw new CompileErrorException(comp_logger.getString());
 		} catch (InterruptedException | ExecutionException | IOException e) {
 			SwingDialogs.error("Error while compiling " + cpp, "%e%", e, true);
-			throw new CompileFailedException(e);
+			throw new CompileFailedException(e, comp_logger.getString());
 		}
 		out.deleteOnExit();
 		
