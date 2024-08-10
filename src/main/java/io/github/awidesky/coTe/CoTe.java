@@ -28,7 +28,8 @@ public class CoTe implements AutoCloseable {
 
 	private static File outputDir = new File(MainFrame.getRoot(), "out");
 	static {
-		//if(!outputDir.exists()) outputDir.mkdirs();
+		if(!outputDir.exists()) outputDir.mkdirs();
+		else Arrays.stream(outputDir.listFiles()).parallel().forEach(File::delete);
 	}
 
 	private Logger logger;
