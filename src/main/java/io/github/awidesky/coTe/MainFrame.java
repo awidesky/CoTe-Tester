@@ -6,9 +6,12 @@ import java.awt.Dimension;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Scanner;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -32,6 +35,7 @@ public class MainFrame extends JFrame {
 
 	private static final Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
 	private static File root = new File("probs");
+	private static final File lastOpened = new File("lastOpened.txt");
 
 	private final JComboBox<String> cb_week = new JComboBox<>(new String[] {"Week"});
 	private final JComboBox<String> cb_prob = new JComboBox<>(new String[] {"Prob"});
@@ -52,6 +56,7 @@ public class MainFrame extends JFrame {
 
 		jfc.setFileSelectionMode(JFileChooser.FILES_ONLY);
 		jfc.setFileFilter(new FileNameExtensionFilter(".cpp file", "cpp"));
+		if(lastOpened.exists()) jfc.setCurrentDirectory(getLastOpened());
 		
 		JPanel problemSelection = new JPanel();
 		cb_prob.setEnabled(false);
@@ -84,6 +89,15 @@ public class MainFrame extends JFrame {
 		pack();
 		setLocation((dim.width - getSize().width) / 2, (dim.height - getSize().height) / 2);
 		setVisible(true);
+	}
+
+	private File getLastOpened() {
+		try(Scanner sc = new Scanner(lastOpened)) {
+			return new File(sc.nextLine());
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+		return new File(".");
 	}
 
 	private String getSelectedProb() {
@@ -149,6 +163,11 @@ public class MainFrame extends JFrame {
 				show.setEnabled(true);
 				submit.setEnabled(true);
 			});
+			try(PrintWriter pw = new PrintWriter(lastOpened)) {
+				pw.println(jfc.getSelectedFile().getParentFile().getAbsolutePath());
+			} catch (FileNotFoundException e1) {
+				e1.printStackTrace();
+			}
 		});
 	}
 	
