@@ -24,11 +24,11 @@ public class Compiler {
 		try {
 			compilerCandidates = Stream.concat(
 					Files.lines(Paths.get("compilers.txt")), 
-					Stream.of("g++", "clang++", "cl.exe", "cl++")
+					Stream.of("g++", "clang++", "cl.exe")
 					).toList();
 		} catch (IOException e) {
 			e.printStackTrace();
-			compilerCandidates = List.of("g++", "clang++", "cl.exe", "cl++");
+			compilerCandidates = List.of("g++", "clang++", "cl.exe");
 		}
 	}
 	
