@@ -10,9 +10,7 @@ import java.util.List;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
-import io.github.awidesky.coTe.exception.CompileErrorException;
-import io.github.awidesky.coTe.exception.CompileFailedException;
-import io.github.awidesky.coTe.exception.TimeOutException;
+import io.github.awidesky.coTe.exception.CoTeException;
 import io.github.awidesky.guiUtil.StringLogger;
 
 class Test {
@@ -52,12 +50,7 @@ class Test {
 					try (CoTe ct = new CoTe(p)) {
 						ct.setLogger(l);
 						r = ct.test(f);
-					} catch (CompileErrorException e) {
-						l.error("Compile Error!");
-						l.error(e);
-					} catch (CompileFailedException e) {
-						l.error(e);
-					} catch (TimeOutException e) {
+					} catch (CoTeException e) {
 						l.error(e);
 					} catch (IOException e1) {
 						l.error(e1);

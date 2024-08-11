@@ -14,8 +14,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import io.github.awidesky.coTe.exception.CoTeException;
 import io.github.awidesky.coTe.exception.CompileErrorException;
 import io.github.awidesky.coTe.exception.CompileFailedException;
+import io.github.awidesky.coTe.exception.RunErrorException;
 import io.github.awidesky.coTe.exception.TimeOutException;
 import io.github.awidesky.guiUtil.ConsoleLogger;
 import io.github.awidesky.guiUtil.Logger;
@@ -86,10 +88,10 @@ public class CoTe implements AutoCloseable {
 		return out.getAbsolutePath();
 	}
 
-	public boolean test(File cpp) throws CompileErrorException, CompileFailedException, TimeOutException {
+	public boolean test(File cpp) throws CoTeException {
 		logger.info("Problem : " + week + "_" + prob + " with " + cpp.getAbsolutePath());
 		String out = compile(cpp);
-		boolean result = true;
+		boolean result = false;
 		for(String probFile : ioFiles) {
 			List<String> inFile;
 			List<String> outFile;
@@ -103,35 +105,35 @@ public class CoTe implements AutoCloseable {
 				SwingDialogs.error("Unable to read io File : " + filename, "%e%", e, true);
 				return false;
 			}
-			Logger processOut = logger.withMorePrefix(String.format("[%6s | out] ", probFile.substring(probFile.lastIndexOf(File.separator) + 1)), false);
-			processOut.setLogLevel(logger.getLogLevel()); //TODO : debug 여부는 config.ini에서 결정
-			Logger processIn = logger.withMorePrefix("[" + probFile.substring(probFile.lastIndexOf(File.separator) + 1) + " | in ] ", false);
-			processIn.setLogLevel(logger.getLogLevel());
+			try (Logger processOut = logger.withMorePrefix(String.format("[%6s | out] ", probFile.substring(probFile.lastIndexOf(File.separator) + 1)), false);
+				 Logger processIn = logger.withMorePrefix("[" + probFile.substring(probFile.lastIndexOf(File.separator) + 1) + " | in ] ", false);
+				 StringLogger output = new StringLogger(true);) {
+
+				processOut.setLogLevel(logger.getLogLevel());
+				processIn.setLogLevel(logger.getLogLevel());
+
+				output.setPrintLogLevel(false);
+				ProcessIO procIO = new ProcessIO(
+						br -> br.lines().forEach(s -> { processOut.info(s); output.info(s); }),
+						br -> br.lines().forEach(processOut::error)
+						);
+				procIO.setStdin(inFile.stream().map(s -> { processIn.debug(s); return s; }));
 			
-			StringLogger output = new StringLogger(true);
-			output.setPrintLogLevel(false);
-			ProcessIO procIO = new ProcessIO(
-					br -> br.lines().forEach(s -> { processOut.debug(s); output.info(s); }),
-					br -> br.lines().forEach(processOut::error)
-					);
-			procIO.setStdin(inFile.stream().map(s -> { processIn.debug(s); return s; }));
-			try {
 				ProcessHandle handle = ProcessExecutor.run(List.of(out), null, procIO);
-				if(!handle.getProcess().waitFor(processWaitSeconds , TimeUnit.SECONDS)) {
-					output.close();
-					throw new TimeOutException();
-				}
+				if(!handle.getProcess().waitFor(processWaitSeconds , TimeUnit.SECONDS))
+					throw new TimeOutException(processWaitSeconds , TimeUnit.SECONDS);
 				
-				handle.wait_all();
-				processOut.info("Process done!");
+				int exitcode = handle.wait_all();
+				processOut.info("Process done with exit code : " + exitcode);
+				if(exitcode != 0) throw new RunErrorException(exitcode);
+				
 				processOut.close();
 				processIn.close();
 				output.close();
+				result = diff(outFile.toArray(String[]::new), output.getString().split("\\R"));
 			} catch (IOException | ExecutionException | InterruptedException e) {
-				SwingDialogs.error("Unable to run executable: " + out, "%e%", e, true);
-				logger.error(e);
+				throw new RunErrorException(e);
 			}
-			result = diff(outFile.toArray(String[]::new), output.getString().split("\\R"));
 		};
 		return result;
 	}
