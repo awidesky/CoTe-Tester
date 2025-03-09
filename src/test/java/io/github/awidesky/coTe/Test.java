@@ -1,5 +1,7 @@
 package io.github.awidesky.coTe;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -11,6 +13,9 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
 import io.github.awidesky.coTe.exception.CoTeException;
+import io.github.awidesky.coTe.exception.CompileErrorException;
+import io.github.awidesky.coTe.exception.RunErrorException;
+import io.github.awidesky.guiUtil.ConsoleLogger;
 import io.github.awidesky.guiUtil.StringLogger;
 
 class Test {
@@ -39,7 +44,7 @@ class Test {
 	void test() throws IOException {
 		List<Result> res = Arrays.stream(new File("probs/test_codes").listFiles())
 				.parallel()
-				.filter(f -> f.getName().endsWith(".cpp"))
+				.filter(f -> f.getName().matches("\\d{1,2}_\\d{1,2}\\.cpp"))
 				.map(f -> {
 					StringLogger l = new StringLogger();
 					l.setPrintLogLevel(true);
@@ -66,6 +71,24 @@ class Test {
 		res.forEach(Result::printResult);
 	}
 
+	@org.junit.jupiter.api.Test
+	void errorTest() {
+		checkThrows("probs/test_codes/1_3_compileError.cpp", CompileErrorException.class);
+		checkThrows("probs/test_codes/1_3_runError.cpp", RunErrorException.class);
+	}
+	private void checkThrows(String file, Class<? extends CoTeException> exceptionClass) {
+		ConsoleLogger l = new ConsoleLogger();
+		l.setPrintLogLevel(true);
+		l.newLine();
+		IntPair p = new IntPair("1_3");
+		try (CoTe ct = new CoTe(p)) {
+			ct.setLogger(l);
+			l.info(assertThrows(exceptionClass, () -> ct.test(new File(file))).toString());
+		} catch (IOException e1) {
+			l.error(e1);
+		}
+		l.newLine();
+	}
 	private class Result implements Comparable<Result> {
 		public final IntPair probPair;
 		public final boolean correct;
