@@ -27,15 +27,16 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import io.github.awidesky.guiUtil.ConsoleLogger;
 import io.github.awidesky.guiUtil.SwingDialogs;
 import io.github.awidesky.guiUtil.level.Level;
+import io.github.awidesky.projectPath.JarPath;
 
 public class MainFrame extends JFrame {
 
 	private static final long serialVersionUID = 252547593768742341L;
-	public static final String version = "1.0";
+	public static final String version = "1.1";
 
 	private static final Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
-	private static File root = new File("probs");
-	private static final File lastOpened = new File("lastOpened.txt");
+	private static File root = new File(JarPath.getProjectPath(), "probs");
+	private static final File lastOpened = new File(JarPath.getProjectPath(), "lastOpened.txt");
 
 	private final JComboBox<String> cb_week = new JComboBox<>(new String[] {"Week"});
 	private final JComboBox<String> cb_prob = new JComboBox<>(new String[] {"Prob"});
@@ -154,7 +155,13 @@ public class MainFrame extends JFrame {
 		submit.setEnabled(false);
 		
 		jfc.setDialogTitle("Choose cpp file for : " + getSelectedProb());
-		if(jfc.showOpenDialog(null) != JFileChooser.APPROVE_OPTION) return;
+		if(jfc.showOpenDialog(null) != JFileChooser.APPROVE_OPTION) {
+			cb_prob.setEnabled(true);
+			cb_week.setEnabled(true);
+			show.setEnabled(true);
+			submit.setEnabled(true);
+			return;			
+		}
 
 		Worker.submit(selected, jfc.getSelectedFile(), (result) -> {
 			SwingUtilities.invokeLater(() -> {
@@ -180,6 +187,12 @@ public class MainFrame extends JFrame {
 			else if(arg.startsWith("--logLevel=")) defaultLogLevel = Level.valueOf(arg.replace("--logLevel=", ""));
 		}
 		Compiler.getCompiler();
+
+		new File(root, "IO").mkdirs();
+		new File(root, "out").mkdirs();
+		new File(root, "pdfs").mkdirs();
+		System.out.println("\nRoot directory to search problems : " + root);
+		
 		SwingUtilities.invokeLater(MainFrame::new);
 	}
 }

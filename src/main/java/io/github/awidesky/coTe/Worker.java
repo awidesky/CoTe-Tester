@@ -9,6 +9,8 @@ import java.util.concurrent.Future;
 import java.util.function.Consumer;
 
 import io.github.awidesky.coTe.exception.CoTeException;
+import io.github.awidesky.coTe.exception.CompileErrorException;
+import io.github.awidesky.coTe.exception.RunErrorException;
 import io.github.awidesky.guiUtil.ConsoleLogger;
 import io.github.awidesky.guiUtil.Logger;
 import io.github.awidesky.guiUtil.SwingDialogs;
@@ -24,9 +26,19 @@ public class Worker {
 			try (CoTe c = new CoTe(prob)) {
 				res = c.test(cpp) ? "Correct" : "Wrong Answer";
 				SwingDialogs.information(prob.toString(), res, true);
+			} catch (RunErrorException er) {
+				res = "Run Error";
+				logger.info("Run Error!");
+				er.getMessage().lines().forEach(logger::info);
+				SwingDialogs.information(res, er.getMessage(), true);
+			} catch (CompileErrorException ec) {
+				res = "Compile Error";
+				logger.info("Compile Error!");
+				ec.getMessage().lines().forEach(logger::info);
+				SwingDialogs.information(res, ec.getMessage(), true);
 			} catch (CoTeException e) {
-				res = e.getMsg();
-				e.getMsg().lines().forEach(logger::error);
+				res = e.getMessage();
+				logger.error(e);
 				SwingDialogs.error(prob.toString() + " - " + res, "%e%", Objects.requireNonNullElse(e.getCause(), e), true);
 			} catch (IOException e4) {
 				logger.error(e4);

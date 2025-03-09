@@ -2,6 +2,7 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=java,eclipse,maven,macos
 
 probs/
+lastOpened.txt
 
 ### Eclipse ###
 .metadata

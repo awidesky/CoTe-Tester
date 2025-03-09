@@ -130,6 +130,7 @@ public class CoTe implements AutoCloseable {
 				processOut.close();
 				processIn.close();
 				output.close();
+				logger.newLine(); logger.newLine();
 				result = diff(outFile.toArray(String[]::new), output.getString().split("\\R"));
 			} catch (IOException | ExecutionException | InterruptedException e) {
 				throw new RunErrorException(e);
@@ -149,7 +150,7 @@ public class CoTe implements AutoCloseable {
 		boolean correct = true;
 		for(int i = 0; i < original.length; i++) {
 			if(!original[i].strip().equals(prog[i].strip())) {
-				logger.info("In Line " + (i + 1));
+				logger.info("Wrong answer in Line " + (i + 1));
 				logger.info("Answer :");
 				logger.info(original[i]);
 				logger.info("Output :");

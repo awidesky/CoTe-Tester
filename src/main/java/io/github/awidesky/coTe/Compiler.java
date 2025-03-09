@@ -13,6 +13,7 @@ import java.util.stream.Stream;
 import io.github.awidesky.guiUtil.ConsoleLogger;
 import io.github.awidesky.guiUtil.Logger;
 import io.github.awidesky.processExecutor.ProcessExecutor;
+import io.github.awidesky.projectPath.JarPath;
 
 public class Compiler {
 
@@ -23,7 +24,7 @@ public class Compiler {
 		logger.setPrefix("[Compiler test] ");
 		try {
 			compilerCandidates = Stream.concat(
-					Files.lines(Paths.get("compilers.txt")), 
+					Files.lines(Paths.get(JarPath.getProjectPath(), "compilers.txt")), 
 					Stream.of("g++", "clang++", "cl.exe")
 					).toList();
 		} catch (IOException e) {
