@@ -29,6 +29,7 @@ public class Worker {
 			} catch (RunErrorException er) {
 				res = "Run Error";
 				logger.info("Run Error!");
+				logger.info("Last input processed is line " + (er.getLastInputIndex() + 1) + " : " + er.getLastInput());
 				er.getMessage().lines().forEach(logger::info);
 				SwingDialogs.information(res, er.getMessage(), true);
 			} catch (CompileErrorException ec) {

@@ -2,12 +2,14 @@ package io.github.awidesky.coTe;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -31,7 +33,7 @@ import io.github.awidesky.processExecutor.ProcessIO;
 
 public class CoTe implements AutoCloseable {
 
-	private static final long processWaitSeconds = 10;
+	private static final long processWaitSeconds = 1000000;
 	private static File outputDir = new File(MainFrame.getRoot(), "out");
 	static {
 		if(!outputDir.exists()) outputDir.mkdirs();
@@ -42,6 +44,7 @@ public class CoTe implements AutoCloseable {
 	private int week;
 	private int prob;
 	private List<String> ioFiles;
+	private boolean slowIO = false;
 	
 	public CoTe(IntPair pair) {
 		this(pair.week, pair.prob);
@@ -93,12 +96,12 @@ public class CoTe implements AutoCloseable {
 		String out = compile(cpp);
 		boolean result = false;
 		for(String probFile : ioFiles) {
-			List<String> inFile;
 			List<String> outFile;
 			
 			String filename = probFile + ".in";
+			StringFeeder sf;
 			try {
-				inFile = Stream.concat(Files.lines(Paths.get(filename), ProcessIO.getNativeChearset()), Stream.of("\n")).toList();
+				sf = new StringFeeder(Paths.get(filename), slowIO );
 				filename = probFile + ".out";
 				outFile = Files.readAllLines(Paths.get(filename), ProcessIO.getNativeChearset());
 			} catch (IOException e) {
@@ -112,12 +115,29 @@ public class CoTe implements AutoCloseable {
 				processOut.setLogLevel(logger.getLogLevel());
 				processIn.setLogLevel(logger.getLogLevel());
 
+				List<Integer> ioIndexList = new LinkedList<>();
+				sf.setLogger(processIn);
 				output.setPrintLogLevel(false);
 				ProcessIO procIO = new ProcessIO(
-						br -> br.lines().forEach(s -> { processOut.info(s); output.info(s); }),
+						br -> {
+							try {
+								System.out.println("ready readline");
+								while(true) {
+									String s = br.readLine();
+									System.out.println("readline");
+									if(s == null) return;
+
+									ioIndexList.add(sf.getIndex());
+									processOut.info(s);
+									output.info(s);
+								}
+							} catch(IOException e) {
+								throw new UncheckedIOException(e);
+							}
+						},
 						br -> br.lines().forEach(processOut::error)
 						);
-				procIO.setStdin(inFile.stream().map(s -> { processIn.debug(s); return s; }));
+				procIO.setStdin(sf);
 			
 				ProcessHandle handle = ProcessExecutor.run(List.of(out), null, procIO);
 				if(!handle.getProcess().waitFor(processWaitSeconds , TimeUnit.SECONDS))
@@ -125,21 +145,21 @@ public class CoTe implements AutoCloseable {
 				
 				int exitcode = handle.wait_all();
 				processOut.info("Process done with exit code : " + exitcode);
-				if(exitcode != 0) throw new RunErrorException(exitcode);
+				if(exitcode != 0) throw new RunErrorException(exitcode, sf.getElementOf(sf.getIndex()), sf.getIndex());
 				
 				processOut.close();
 				processIn.close();
 				output.close();
 				logger.newLine(); logger.newLine();
-				result = diff(outFile.toArray(String[]::new), output.getString().split("\\R"));
+				result = diff(outFile.toArray(String[]::new), output.getString().split("\\R"), ioIndexList, sf);
 			} catch (IOException | ExecutionException | InterruptedException e) {
-				throw new RunErrorException(e);
+				throw new RunErrorException(e, sf.getElementOf(sf.getIndex()), sf.getIndex());
 			}
 		};
 		return result;
 	}
 
-	private boolean diff(String[] original, String[] prog) {
+	private boolean diff(String[] original, String[] prog, List<Integer> ioIndexList, StringFeeder sf) {
 		if(original.length != prog.length) {
 			logger.info(original.length + "!=" + prog.length);
 			logger.info("Program output :");
@@ -155,6 +175,8 @@ public class CoTe implements AutoCloseable {
 				logger.info(original[i]);
 				logger.info("Output :");
 				logger.info(prog[i]);
+				logger.info("Input line " +(ioIndexList.get(i) + 1) + " is a possible input corresponds to the output :");
+				logger.info("\"" + sf.getElementOf(ioIndexList.get(i)) + "\"");
 				logger.info();
 				correct = false;
 			}

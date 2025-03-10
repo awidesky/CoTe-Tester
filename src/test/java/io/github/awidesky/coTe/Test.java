@@ -1,5 +1,6 @@
 package io.github.awidesky.coTe;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.File;
@@ -75,6 +76,17 @@ class Test {
 	void errorTest() {
 		checkThrows("probs/test_codes/1_3_compileError.cpp", CompileErrorException.class);
 		checkThrows("probs/test_codes/1_3_runError.cpp", RunErrorException.class);
+		
+		ConsoleLogger l = new ConsoleLogger();
+		l.setPrintLogLevel(true);
+		l.newLine();
+		try (CoTe ct = new CoTe(new IntPair("1_3"))) {
+			ct.setLogger(l);
+			assertFalse(ct.test(new File("probs/test_codes/1_3_wrongAnswer.cpp")));
+		} catch (Exception e1) {
+			l.error(e1);
+		}
+		l.newLine();
 	}
 	private void checkThrows(String file, Class<? extends CoTeException> exceptionClass) {
 		ConsoleLogger l = new ConsoleLogger();
