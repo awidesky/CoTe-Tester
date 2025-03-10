@@ -12,6 +12,7 @@ import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
+import java.util.concurrent.Executors;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -27,6 +28,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import io.github.awidesky.guiUtil.ConsoleLogger;
 import io.github.awidesky.guiUtil.SwingDialogs;
 import io.github.awidesky.guiUtil.level.Level;
+import io.github.awidesky.processExecutor.ProcessExecutor;
 import io.github.awidesky.projectPath.JarPath;
 
 public class MainFrame extends JFrame {
@@ -186,6 +188,9 @@ public class MainFrame extends JFrame {
 			if(arg.startsWith("--root=")) root = new File(arg.replace("--root=", ""));
 			else if(arg.startsWith("--logLevel=")) defaultLogLevel = Level.valueOf(arg.replace("--logLevel=", ""));
 		}
+		
+		ProcessExecutor.setThreadPool(Executors.newCachedThreadPool());
+		
 		Compiler.getCompiler();
 
 		new File(root, "IO").mkdirs();
