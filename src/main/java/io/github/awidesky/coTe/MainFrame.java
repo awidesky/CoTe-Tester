@@ -37,8 +37,8 @@ public class MainFrame extends JFrame {
 	public static final String version = "1.1";
 
 	private static final Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
-	private static File root = new File(JarPath.getProjectPath(), "probs");
-	private static final File lastOpened = new File(JarPath.getProjectPath(), "lastOpened.txt");
+	private static File root = new File(JarPath.getProjectPath(MainFrame.class), "probs");
+	private static final File lastOpened = new File(JarPath.getProjectPath(MainFrame.class), "lastOpened.txt");
 
 	private final JComboBox<String> cb_week = new JComboBox<>(new String[] {"Week"});
 	private final JComboBox<String> cb_prob = new JComboBox<>(new String[] {"Prob"});

@@ -24,7 +24,7 @@ public class Compiler {
 		logger.setPrefix("[Compiler test] ");
 		try {
 			compilerCandidates = Stream.concat(
-					Files.lines(Paths.get(JarPath.getProjectPath(), "compilers.txt")), 
+					Files.lines(Paths.get(JarPath.getProjectPath(Compiler.class), "compilers.txt")), 
 					Stream.of("g++", "clang++", "cl.exe")
 					).toList();
 		} catch (IOException e) {
