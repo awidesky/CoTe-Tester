@@ -54,10 +54,8 @@ public class Compiler {
 				pl.setPrefix("[Compiler test : " + c + "] ");
 				return ProcessExecutor.runNow(pl, new File("."), command ) == 0;
 			} catch (InterruptedException | ExecutionException | IOException e) {
-				if(e.getLocalizedMessage().endsWith("No such file or directory"))
-					logger.error(e.getLocalizedMessage());
-				else 
-					e.printStackTrace();
+				logger.error(e.getLocalizedMessage());
+				logger.debug(e);
 				return false;
 			}
 		}).toList();
