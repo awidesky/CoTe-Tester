@@ -16,7 +16,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import io.github.awidesky.coTe.exception.CoTeException;
 import io.github.awidesky.coTe.exception.CompileErrorException;
 import io.github.awidesky.coTe.exception.CompileFailedException;
 import io.github.awidesky.coTe.exception.RunErrorException;
@@ -91,23 +90,22 @@ public class CoTe implements AutoCloseable {
 		return out.getAbsolutePath();
 	}
 
-	public boolean test(File cpp) throws CoTeException {
+	public Result test(File cpp) throws CompileFailedException, IOException {
 		logger.info("Problem : " + week + "_" + prob + " with " + cpp.getAbsolutePath());
-		String out = compile(cpp);
-		boolean result = false;
+		String out;
+		boolean result = true;
+		try {
+			out = compile(cpp);
+		} catch (CompileErrorException e) {
+			return new Result(ResultType.COMPILE_ERROR, e);
+		}
 		for(String probFile : ioFiles) {
 			List<String> outFile;
 			
 			String filename = probFile + ".in";
-			StringFeeder sf;
-			try {
-				sf = new StringFeeder(Paths.get(filename), slowIO );
-				filename = probFile + ".out";
-				outFile = Files.readAllLines(Paths.get(filename), ProcessIO.getNativeChearset());
-			} catch (IOException e) {
-				SwingDialogs.error("Unable to read io File : " + filename, "%e%", e, true);
-				return false;
-			}
+			StringFeeder sf = new StringFeeder(Paths.get(filename), slowIO );
+			filename = probFile + ".out";
+			outFile = Files.readAllLines(Paths.get(filename), ProcessIO.getNativeChearset());
 			try (Logger processOut = logger.withMorePrefix(String.format("[%6s | out] ", probFile.substring(probFile.lastIndexOf(File.separator) + 1)), false);
 				 Logger processIn = logger.withMorePrefix("[" + probFile.substring(probFile.lastIndexOf(File.separator) + 1) + " | in ] ", false);
 				 StringLogger output = new StringLogger(true);) {
@@ -141,22 +139,24 @@ public class CoTe implements AutoCloseable {
 			
 				ProcessHandle handle = ProcessExecutor.run(List.of(out), null, procIO);
 				if(!handle.getProcess().waitFor(processWaitSeconds , TimeUnit.SECONDS))
-					throw new TimeOutException(processWaitSeconds , TimeUnit.SECONDS);
+					return new Result(ResultType.TIME_OUT, new TimeOutException(processWaitSeconds , TimeUnit.SECONDS));
 				
 				int exitcode = handle.wait_all();
 				processOut.info("Process done with exit code : " + exitcode);
-				if(exitcode != 0) throw new RunErrorException(exitcode, sf.getElementOf(sf.getIndex()), sf.getIndex());
+				if(exitcode != 0) 
+					return new Result(ResultType.RUN_ERROR , new RunErrorException(exitcode, sf.getElementOf(sf.getIndex()), sf.getIndex()));
 				
 				processOut.close();
 				processIn.close();
 				output.close();
 				logger.newLine(); logger.newLine();
-				result = diff(outFile.toArray(String[]::new), output.getString().split("\\R"), ioIndexList, sf);
+				if(!diff(outFile.toArray(String[]::new), output.getString().split("\\R"), ioIndexList, sf)) result = false;
 			} catch (IOException | ExecutionException | InterruptedException e) {
-				throw new RunErrorException(e, sf.getElementOf(sf.getIndex()), sf.getIndex());
+				return new Result(ResultType.RUN_ERROR, new RunErrorException(e, sf.getElementOf(sf.getIndex()), sf.getIndex()));
 			}
-		};
-		return result;
+			
+		}
+		return new Result(result ? ResultType.CORRECT : ResultType.WRONG_ANSWER, null);
 	}
 
 	private boolean diff(String[] original, String[] prog, List<Integer> ioIndexList, StringFeeder sf) {

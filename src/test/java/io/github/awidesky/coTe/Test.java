@@ -1,7 +1,7 @@
 package io.github.awidesky.coTe;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeAll;
 
 import io.github.awidesky.coTe.exception.CoTeException;
 import io.github.awidesky.coTe.exception.CompileErrorException;
+import io.github.awidesky.coTe.exception.CompileFailedException;
 import io.github.awidesky.coTe.exception.RunErrorException;
 import io.github.awidesky.guiUtil.ConsoleLogger;
 import io.github.awidesky.guiUtil.StringLogger;
@@ -43,14 +44,14 @@ class Test {
 
 	@org.junit.jupiter.api.Test
 	void test() throws IOException {
-		List<Result> res = Arrays.stream(new File("probs/test_codes").listFiles())
+		List<TestResult> res = Arrays.stream(new File("probs/test_codes").listFiles())
 				.parallel()
 				.filter(f -> f.getName().matches("\\d{1,2}_\\d{1,2}\\.cpp"))
 				.map(f -> {
 					StringLogger l = new StringLogger();
 					l.setPrintLogLevel(true);
 					IntPair p = new IntPair(f.getName());
-					boolean r = false;
+					Result r = null;
 					
 					l.info("Prob : " + p.toString());
 					try (CoTe ct = new CoTe(p)) {
@@ -62,18 +63,18 @@ class Test {
 						l.error(e1);
 					}
 					l.newLine();
-					return new Result(p, r, l.getString());
+					return new TestResult(p, r, l.getString());
 				})
 				.sorted().toList();
 		
 		System.out.println();
-		res.forEach(Result::printLog);
+		res.forEach(TestResult::printLog);
 		System.out.println();
-		res.forEach(Result::printResult);
+		res.forEach(TestResult::printResult);
 	}
 
 	@org.junit.jupiter.api.Test
-	void errorTest() {
+	void errorTest() throws CompileFailedException {
 		checkThrows("probs/test_codes/1_3_compileError.cpp", CompileErrorException.class);
 		checkThrows("probs/test_codes/1_3_runError.cpp", RunErrorException.class);
 		
@@ -82,33 +83,33 @@ class Test {
 		l.newLine();
 		try (CoTe ct = new CoTe(new IntPair("1_3"))) {
 			ct.setLogger(l);
-			assertFalse(ct.test(new File("probs/test_codes/1_3_wrongAnswer.cpp")));
+			assertEquals(ResultType.WRONG_ANSWER, ct.test(new File("probs/test_codes/1_3_wrongAnswer.cpp")).result());
 		} catch (Exception e1) {
 			l.error(e1);
 		}
 		l.newLine();
 	}
-	private void checkThrows(String file, Class<? extends CoTeException> exceptionClass) {
+	private void checkThrows(String file, Class<? extends CoTeException> exceptionClass) throws CompileFailedException {
 		ConsoleLogger l = new ConsoleLogger();
 		l.setPrintLogLevel(true);
 		l.newLine();
 		IntPair p = new IntPair("1_3");
 		try (CoTe ct = new CoTe(p)) {
 			ct.setLogger(l);
-			l.info(assertThrows(exceptionClass, () -> ct.test(new File(file))).toString());
+			assertInstanceOf(exceptionClass, ct.test(new File(file)).coteException());
 		} catch (IOException e1) {
 			l.error(e1);
 		}
 		l.newLine();
 	}
-	private class Result implements Comparable<Result> {
+	private class TestResult implements Comparable<TestResult> {
 		public final IntPair probPair;
-		public final boolean correct;
+		public final Result result;
 		public final String log;
 
-		public Result(IntPair prob, boolean correct, String log) {
+		public TestResult(IntPair prob, Result r, String log) {
 			this.probPair = prob;
-			this.correct = correct;
+			this.result = r;
 			this.log = log;
 		}
 
@@ -117,11 +118,11 @@ class Test {
 		}
 		
 		public void printResult() {
-			System.out.printf("Week %2d, prob %d : %s\n", probPair.week, probPair.prob, correct ? "Correct" : "Wrong_answer");
+			System.out.printf("Week %2d, prob %d : %s\n", probPair.week, probPair.prob, result.toString());
 		}
 
 		@Override
-		public int compareTo(Result o) {
+		public int compareTo(TestResult o) {
 			return probPair.compareTo(o.probPair);
 		}
 	}
