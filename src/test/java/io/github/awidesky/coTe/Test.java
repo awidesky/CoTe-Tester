@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -71,6 +72,9 @@ class Test {
 		res.forEach(TestResult::printLog);
 		System.out.println();
 		res.forEach(TestResult::printResult);
+		
+		List<TestResult> l = res.stream().filter(t -> t.result.result() != ResultType.CORRECT).toList();
+		assertEquals(0, l.size(), "Failed problems : " + l.stream().map(t -> t.probPair).map(IntPair::toString).collect(Collectors.joining(", ")));
 	}
 
 	@org.junit.jupiter.api.Test
