@@ -5,17 +5,13 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
+import io.github.awidesky.coTe.compiler.CompilerTester;
 import io.github.awidesky.coTe.exception.CompileErrorException;
 import io.github.awidesky.coTe.exception.CompileFailedException;
 import io.github.awidesky.coTe.exception.RunErrorException;
@@ -23,8 +19,6 @@ import io.github.awidesky.coTe.exception.TimeOutException;
 import io.github.awidesky.guiUtil.ConsoleLogger;
 import io.github.awidesky.guiUtil.Logger;
 import io.github.awidesky.guiUtil.StringLogger;
-import io.github.awidesky.guiUtil.SwingDialogs;
-import io.github.awidesky.guiUtil.level.Level;
 import io.github.awidesky.processExecutor.ProcessExecutor;
 import io.github.awidesky.processExecutor.ProcessExecutor.ProcessHandle;
 import io.github.awidesky.processExecutor.ProcessIO;
@@ -70,32 +64,13 @@ public class CoTe implements AutoCloseable {
 		this.logger = logger;
 	}
 	
-	private String compile(File cpp) throws CompileErrorException, CompileFailedException {
-		File out = new File(outputDir, new SimpleDateFormat("yyyy-MM-dd-kk-mm-ss").format(new Date()) + cpp.getName() + ".out");
-		List<String> command = new ArrayList<>();
-		Stream.of(Compiler.getCompiler(), "--std=c++14", cpp.getAbsolutePath(), "-o", out.getAbsolutePath()).forEach(command::add);
-		if(MainFrame.getDefaultLogLevel().includes(Level.DEBUG)) command.add("-v");
-		
-		logger.debug("Compiling with : " + command.stream().collect(Collectors.joining(" ")));
-		StringLogger comp_logger = new StringLogger(true);
-		comp_logger.setPrintLogLevel(false);
-		try {
-			if(ProcessExecutor.runNow(comp_logger, new File("."), command.toArray(String[]::new)) != 0) throw new CompileErrorException(comp_logger.getString());
-		} catch (InterruptedException | ExecutionException | IOException e) {
-			SwingDialogs.error("Error while compiling " + cpp, "%e%", e, true);
-			throw new CompileFailedException(e, comp_logger.getString());
-		}
-		out.deleteOnExit();
-		
-		return out.getAbsolutePath();
-	}
 
 	public Result test(File cpp) throws CompileFailedException, IOException {
 		logger.info("Problem : " + week + "_" + prob + " with " + cpp.getAbsolutePath());
 		String out;
 		boolean result = true;
 		try {
-			out = compile(cpp);
+			out = CompilerTester.getCompiler().compile(outputDir, cpp, logger).getAbsolutePath();
 		} catch (CompileErrorException e) {
 			return new Result(ResultType.COMPILE_ERROR, e);
 		}

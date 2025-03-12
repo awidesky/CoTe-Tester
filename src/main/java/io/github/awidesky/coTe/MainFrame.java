@@ -25,6 +25,7 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
+import io.github.awidesky.coTe.compiler.CompilerTester;
 import io.github.awidesky.guiUtil.ConsoleLogger;
 import io.github.awidesky.guiUtil.SwingDialogs;
 import io.github.awidesky.guiUtil.level.Level;
@@ -191,7 +192,7 @@ public class MainFrame extends JFrame {
 		
 		ProcessExecutor.setThreadPool(Executors.newCachedThreadPool());
 		
-		Compiler.getCompiler();
+		CompilerTester.getCompiler();
 
 		new File(root, "IO").mkdirs();
 		new File(root, "out").mkdirs();

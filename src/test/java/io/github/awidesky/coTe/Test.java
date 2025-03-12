@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
+import io.github.awidesky.coTe.compiler.CompilerTester;
 import io.github.awidesky.coTe.exception.CoTeException;
 import io.github.awidesky.coTe.exception.CompileErrorException;
 import io.github.awidesky.coTe.exception.CompileFailedException;
@@ -25,7 +26,7 @@ class Test {
 	
 	@BeforeAll
 	static void setUpBeforeClass() throws Exception {
-		Compiler.getCompiler();
+		CompilerTester.getCompiler();
 		System.out.println();
 		
 		Files.list(Paths.get("probs/out")).parallel().forEach(t -> {
