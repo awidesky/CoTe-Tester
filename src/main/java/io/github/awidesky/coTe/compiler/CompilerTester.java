@@ -79,7 +79,7 @@ public class CompilerTester {
 			}
 		}).toList();
 		logger.info("Found compilers : " + workingCompilers.stream().map(Compiler::getCompilerExecutable).collect(Collectors.joining(", ")));
-		logger.info(workingCompilers.get(0) + " will used.");
+		logger.info(workingCompilers.get(0).getCompilerExecutable() + " will used.");
 		return workingCompilers.get(0);
 	}
 }
