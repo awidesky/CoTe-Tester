@@ -11,6 +11,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import io.github.awidesky.coTe.MainFrame;
 import io.github.awidesky.guiUtil.ConsoleLogger;
 import io.github.awidesky.guiUtil.Logger;
 import io.github.awidesky.processExecutor.ProcessExecutor;
@@ -23,6 +24,7 @@ public class CompilerTester {
 	private static List<Compiler> compilerCandidates;
 	static {
 		logger.setPrefix("[Compiler test] ");
+		logger.setLogLevel(MainFrame.getDefaultLogLevel());
 		compilerCandidates = new LinkedList<Compiler>();
 		try {
 			Files.lines(Paths.get(JarPath.getProjectPath(CompilerTester.class), "compilers.txt")).map(PosixCompiler::new).forEach(compilerCandidates::add);

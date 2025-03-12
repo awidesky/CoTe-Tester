@@ -10,14 +10,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import io.github.awidesky.coTe.MainFrame;
 import io.github.awidesky.coTe.exception.CompileErrorException;
 import io.github.awidesky.coTe.exception.CompileFailedException;
 import io.github.awidesky.guiUtil.ConsoleLogger;
 import io.github.awidesky.guiUtil.Logger;
 import io.github.awidesky.guiUtil.StringLogger;
 import io.github.awidesky.guiUtil.SwingDialogs;
-import io.github.awidesky.guiUtil.level.Level;
 import io.github.awidesky.processExecutor.ProcessExecutor;
 
 public class MSVCCompiler implements Compiler {
@@ -29,7 +27,7 @@ public class MSVCCompiler implements Compiler {
 	public MSVCCompiler(String vcvars64) {
 		this.vcvars64 = vcvars64;
 		cl = findCL();
-		this.compileCommand = "\"%s\" && \"%s\" ".formatted(vcvars64, cl);
+		this.compileCommand = "\"%s\" > nul 2>&1 && \"%s\" ".formatted(vcvars64, cl);
 	}
 	
 	private String findCL() {
@@ -56,14 +54,16 @@ public class MSVCCompiler implements Compiler {
 
 	@Override
 	public File compile(File outputDir, File cpp, Logger logger) throws CompileErrorException, CompileFailedException {
-		File out = new File(outputDir, new SimpleDateFormat("yyyy-MM-dd-kk-mm-ss_").format(new Date()) + cpp.getName() + ".exe");
+		outputDir = new File(outputDir, new SimpleDateFormat("yyyy-MM-dd-kk-mm-ss").format(new Date()) + "_" + cpp.getName());
+		outputDir.mkdirs();
+		File out = new File(outputDir, cpp.getName() + ".exe");
 		List<String> command = new ArrayList<>();
 		Stream.of("cmd", "/c", compileCommand + 
-				"/ZI /W3 /WX- /diagnostics:column /sdl /Od /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /MDd /EHsc /GS /source-charset:utf-8 /std:c++14 " + 
-				//"/ZI /JMC /nologo /W3 /WX- /diagnostics:column /sdl /Od /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /permissive- /external:W3 /Gd /TP /FC /errorReport:prompt " +
+				//"/ZI /nologo /W3 /WX- /diagnostics:column /sdl /Od /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /MDd /EHsc /GS /source-charset:utf-8 /std:c++14 " + 
+				"/ZI /JMC /nologo /W3 /WX- /diagnostics:column /sdl /Od /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm- /source-charset:utf-8 /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /permissive- /external:W3 /Gd /TP /FC /errorReport:prompt " +
 				 "/Fe\"" + out.getAbsolutePath() + "\" " + cpp.getAbsolutePath())
 			.forEach(command::add);
-		if(MainFrame.getDefaultLogLevel().includes(Level.DEBUG)) command.add(" /VERBOSE");
+		//TODO : if(MainFrame.getDefaultLogLevel().includes(Level.DEBUG)) command.add("/VERBOSE");
 		
 		logger.debug("Compiling with : " + command.stream().collect(Collectors.joining(" ")));
 		StringLogger comp_logger = new StringLogger(true);
@@ -82,7 +82,7 @@ public class MSVCCompiler implements Compiler {
 
 	@Override
 	public String[] testCommand() {
-		return new String[] {"cmd", "/c", compileCommand} ;
+		return new String[] {"cmd", "/c", "\"\"%s\" && \"%s\"\"".formatted(vcvars64, cl)} ;
 	}
 
 	@Override
