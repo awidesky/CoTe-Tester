@@ -12,13 +12,14 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
+import io.github.awidesky.guiUtil.ConsoleLogger;
 import io.github.awidesky.guiUtil.Logger;
 
 public class StringFeeder implements Consumer<OutputStream> {
 
 	private final List<String> list;
 	private final AtomicInteger idx = new AtomicInteger(-1);
-	private Logger l = Logger.nullLogger;
+	private Logger log = Logger.nullLogger;
 	private boolean slowed = false;
 	
 	public StringFeeder(Path file, boolean slowed) throws IOException {
@@ -30,7 +31,7 @@ public class StringFeeder implements Consumer<OutputStream> {
 	}
 	
 	public void setLogger(Logger l) {
-		this.l = l;
+		this.log = l;
 	}
 
 	public String getElementOf(int index) {
@@ -43,27 +44,29 @@ public class StringFeeder implements Consumer<OutputStream> {
 	
 	@Override
 	public void accept(OutputStream o) {
-		System.out.println("ready writeline");
-		try(BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(o))) {
+		try(BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(o));
+				Logger clog = new ConsoleLogger()) {
+			clog.setPrefix("[Process I/O] ");
+			clog.setLogLevel(MainFrame.getDefaultLogLevel());
+			clog.trace("ready writeline");
 			for(String s : list) {
 				bw.write(s);
 				bw.newLine();
 				bw.flush();
 				idx.incrementAndGet();
-				System.out.println("writeline : " + s);
-				l.debug(s);
+				clog.trace("writeline : " + s);
+				log.debug(s);
 				Thread.yield();
-				if(slowed ) {
+				if(slowed) {
 					try {
 						Thread.sleep(1000);
 					} catch (Exception e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 				}
 			}
 		} catch (IOException e1) {
-			l.error(e1);
+			log.error(e1);
 		}
 	}
 

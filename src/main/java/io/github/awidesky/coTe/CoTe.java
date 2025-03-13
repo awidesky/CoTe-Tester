@@ -93,11 +93,13 @@ public class CoTe implements AutoCloseable {
 				output.setPrintLogLevel(false);
 				ProcessIO procIO = new ProcessIO(
 						br -> {
-							try {
-								System.out.println("ready readline");
+							try (Logger clog = new ConsoleLogger()) {
+								clog.setPrefix("[Process I/O] ");
+								clog.setLogLevel(MainFrame.getDefaultLogLevel());
+								clog.trace("ready readline");
 								while(true) {
 									String s = br.readLine();
-									System.out.println("readline");
+									clog.trace("readline");
 									if(s == null) return;
 
 									ioIndexList.add(sf.getIndex());
