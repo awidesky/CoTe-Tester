@@ -1,0 +1,12 @@
+root=probs
+
+iodir=IO
+ioFiles=@w_@p.@d.in
+iext=in
+oext=out
+
+pdfFiles=pdfs/@w_@p.pdf
+
+outputdir=out
+
+iowait=0

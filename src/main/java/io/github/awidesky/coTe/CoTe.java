@@ -6,10 +6,13 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 import io.github.awidesky.coTe.compiler.CompilerTester;
 import io.github.awidesky.coTe.exception.CompileErrorException;
@@ -22,13 +25,28 @@ import io.github.awidesky.guiUtil.StringLogger;
 import io.github.awidesky.processExecutor.ProcessExecutor;
 import io.github.awidesky.processExecutor.ProcessExecutor.ProcessHandle;
 import io.github.awidesky.processExecutor.ProcessIO;
+import io.github.awidesky.projectPath.JarPath;
 
 
 public class CoTe implements AutoCloseable {
 
+	public static final int PROBLEMNUM = 100;
 	private static final long processWaitSeconds = 1000000;
-	private static File outputDir = new File(MainFrame.getRoot(), "out");
+	private static File outputDir;
+	public static Map<String, String> properties = new HashMap<>();
 	static {
+		try {
+			Files.lines(Paths.get(JarPath.getProjectPath(CompilerTester.class), "properties.txt"))
+			.filter(s -> s.contains("=")).map(s -> s.split("=")).forEach(arr -> properties.put(arr[0].strip(), arr[1].strip()));
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		System.out.println("\nProperties :");
+		properties.entrySet().stream().map(e -> "\t" + e.getKey() + " : " + e.getValue()).forEach(System.out::println);
+		System.out.println();
+		
+		outputDir = new File(properties.get("root"), properties.get("outputdir"));
 		if(!outputDir.exists()) outputDir.mkdirs();
 		else Arrays.stream(outputDir.listFiles()).parallel().forEach(File::delete);
 	}
@@ -37,7 +55,6 @@ public class CoTe implements AutoCloseable {
 	private int week;
 	private int prob;
 	private List<String> ioFiles;
-	private boolean slowIO = false;
 	
 	public CoTe(IntPair pair) {
 		this(pair.week, pair.prob);
@@ -45,13 +62,14 @@ public class CoTe implements AutoCloseable {
 	public CoTe(int week, int prob) {
 		this.week = week;
 		this.prob = prob;
-		File ios = new File(MainFrame.getRoot(), "IO");
-		ioFiles = Arrays.stream(ios.listFiles())
-				.filter(s -> s.getName().matches(week + "_" + prob + ".\\d.in"))
-				.map(File::getAbsolutePath)
-				.filter(s -> s.endsWith("in"))
-				.map(s -> s.replace(".in", ""))
-				.toList();
+		File ios = new File(properties.get("root"), properties.get("iodir"));
+		ioFiles = IntStream.range(1, PROBLEMNUM)
+					.mapToObj(i -> new File(ios + File.separator + format(properties.get("ioFiles"), i)))
+					.takeWhile(File::exists)
+					.map(File::getAbsolutePath)
+					.map(s -> s.substring(0, s.lastIndexOf('.') + 1))
+					.toList();
+		
 		if(ioFiles.isEmpty()) {
 			throw new RuntimeException("Problem " + week + "_" + prob + " does not exists!");
 		}
@@ -66,7 +84,7 @@ public class CoTe implements AutoCloseable {
 	
 
 	public Result test(File cpp) throws CompileFailedException, IOException {
-		logger.info("Problem : " + week + "_" + prob + " with " + cpp.getAbsolutePath());
+		System.out.println("Problem : " + week + "_" + prob + "\twith " + cpp.getAbsolutePath());
 		String out;
 		boolean result = true;
 		try {
@@ -77,10 +95,10 @@ public class CoTe implements AutoCloseable {
 		for(String probFile : ioFiles) {
 			List<String> outFile;
 			
-			String filename = probFile + ".in";
-			StringFeeder sf = new StringFeeder(Paths.get(filename), slowIO );
-			filename = probFile + ".out";
-			outFile = Files.readAllLines(Paths.get(filename), ProcessIO.getNativeChearset());
+			String filename = probFile + properties.get("iext");
+			StringFeeder sf = new StringFeeder(Paths.get(filename));
+			filename = probFile + properties.get("oext");
+			outFile = Files.readAllLines(Paths.get(filename), ProcessIO.getNativeChearset()); //TODO : set charset?
 			try (Logger processOut = logger.withMorePrefix(String.format("[%6s | out] ", probFile.substring(probFile.lastIndexOf(File.separator) + 1)), false);
 				 Logger processIn = logger.withMorePrefix("[" + probFile.substring(probFile.lastIndexOf(File.separator) + 1) + " | in ] ", false);
 				 StringLogger output = new StringLogger(true);) {
@@ -163,6 +181,25 @@ public class CoTe implements AutoCloseable {
 		else logger.info("Wrong-answer!");
 		return correct;
 	}
+	
+	private String format(String str) {
+		return format(str, week, prob);
+	}
+	
+	public static  String format(String str, int w, int p) {
+		return str
+				.replace("@w", String.valueOf(w))
+				.replace("@W", String.format("%02d", w))
+				.replace("@p", String.valueOf(p))
+				.replace("@P", String.format("%02d", p));
+	}
+	
+	private String format(String str, int d) {
+		return format(str)
+				.replace("@d", String.valueOf(d))
+				.replace("@D", String.format("%02d", d));
+	}
+	
 	@Override
 	public void close() throws IOException {
 		logger.close();

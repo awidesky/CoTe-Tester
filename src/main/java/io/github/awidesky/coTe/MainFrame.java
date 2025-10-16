@@ -9,10 +9,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.Executors;
+import java.util.stream.IntStream;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -35,10 +35,10 @@ import io.github.awidesky.projectPath.JarPath;
 public class MainFrame extends JFrame {
 
 	private static final long serialVersionUID = 252547593768742341L;
-	public static final String version = "1.1";
+	public static final String version = "2.0";
 
 	private static final Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
-	private static File root = new File(JarPath.getProjectPath(MainFrame.class), "probs");
+	private static File root;
 	private static final File lastOpened = new File(JarPath.getProjectPath(MainFrame.class), "lastOpened.txt");
 
 	private final JComboBox<String> cb_week = new JComboBox<>(new String[] {"Week"});
@@ -76,8 +76,7 @@ public class MainFrame extends JFrame {
 		JPanel submitPanel = new JPanel();
 		show.setEnabled(false);
 		show.addActionListener(e -> {
-			File f= new File(root, "pdfs" + File.separator
-					+ selected.toString() + ".pdf");
+			File f = new File(root, CoTe.format(CoTe.properties.get("pdfFiles"), selected.getWeek(), selected.getProb()));
 			try {
 				Desktop.getDesktop().open(f);
 			} catch (IOException e1) {
@@ -108,19 +107,13 @@ public class MainFrame extends JFrame {
 		return cb_week.getSelectedItem() + "_" + cb_prob.getSelectedItem();
 	}
 
-	
-	public static File getRoot() {
-		return root;
-	}
-
 	private List<IntPair> cotes;
 	private void setupCheckbox() {
-		cotes = Arrays.stream(new File(root, "IO").listFiles())
-				.filter(f -> f.getName().endsWith(".in"))
-				.map(File::getName)
-				.map(s -> s.replaceAll("\\.\\d\\.in", ""))
-				.map(IntPair::new)
-				.toList();
+		cotes = IntStream.range(1, CoTe.PROBLEMNUM).mapToObj(i -> 
+					IntStream.range(1, CoTe.PROBLEMNUM)
+						.filter(j -> new File(root, CoTe.format(CoTe.properties.get("pdfFiles"), i, j)).exists())
+					.mapToObj(j -> new IntPair(i, j)))
+				.flatMap(is -> is).toList();
 		cotes.stream().mapToInt(IntPair::getWeek).distinct().sorted().mapToObj(String::valueOf).forEach(cb_week::addItem);
 		cb_week.addActionListener(e -> {
 			String selected = (String)cb_week.getSelectedItem();
@@ -165,6 +158,7 @@ public class MainFrame extends JFrame {
 			submit.setEnabled(true);
 			return;			
 		}
+		System.out.println(selected + " :" + jfc.getSelectedFile().getAbsolutePath());
 
 		Worker.submit(selected, jfc.getSelectedFile(), (result) -> {
 			SwingUtilities.invokeLater(() -> {
@@ -186,17 +180,24 @@ public class MainFrame extends JFrame {
 	public static Level getDefaultLogLevel() { return defaultLogLevel; }
 	public static void main(String[] args) {
 		for(String arg : args) {
-			if(arg.startsWith("--root=")) root = new File(arg.replace("--root=", ""));
-			else if(arg.startsWith("--logLevel=")) defaultLogLevel = Level.valueOf(arg.replace("--logLevel=", ""));
+			if(arg.startsWith("--logLevel=")) defaultLogLevel = Level.valueOf(arg.replace("--logLevel=", ""));
 		}
 		
 		ProcessExecutor.setThreadPool(Executors.newCachedThreadPool());
 		
 		CompilerTester.getCompiler();
 
-		new File(root, "IO").mkdirs();
-		new File(root, "out").mkdirs();
-		new File(root, "pdfs").mkdirs();
+		root = new File(CoTe.properties.get("root"));
+		if(!root.isAbsolute()) root = new File(JarPath.getProjectPath(MainFrame.class), CoTe.properties.get("root"));
+		try {
+			root = root.getCanonicalFile();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		CoTe.properties.put("root", root.getAbsolutePath());
+		
+		new File(root, CoTe.properties.get("iodir")).mkdirs();
+		new File(root, CoTe.properties.get("outputdir")).mkdirs();
 		System.out.println("\nRoot directory to search problems : " + root);
 		
 		SwingUtilities.invokeLater(MainFrame::new);

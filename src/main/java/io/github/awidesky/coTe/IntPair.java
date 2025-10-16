@@ -9,9 +9,13 @@ public class IntPair implements Comparable<IntPair> {
 	
 	public IntPair(String str) {
 		Matcher m = Pattern.compile("\\D*(\\d+)\\D+(\\d+)\\D*").matcher(str);
-		if(!m.find()) System.out.println(str);;
+		if(!m.find()) System.out.println("Wrong format : " + str);
 		week = Integer.parseInt(m.group(1));
 		prob = Integer.parseInt(m.group(2));
+	}
+	public IntPair(int week, int prob) {
+		this.week = week;
+		this.prob = prob;
 	}
 
 	public int getWeek() {

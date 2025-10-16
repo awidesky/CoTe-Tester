@@ -40,6 +40,8 @@ public class PosixCompiler implements Compiler {
 		try {
 			if(ProcessExecutor.runNow(comp_logger, new File("."), command.toArray(String[]::new)) != 0) throw new CompileErrorException(comp_logger.getString());
 		} catch (InterruptedException | ExecutionException | IOException e) {
+			logger.error(e);
+			logger.error(comp_logger.getString());
 			SwingDialogs.error("Error while compiling " + cpp, "%e%", e, true);
 			throw new CompileFailedException(e, comp_logger.getString());
 		}

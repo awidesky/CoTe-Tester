@@ -20,10 +20,8 @@ public class StringFeeder implements Consumer<OutputStream> {
 	private final List<String> list;
 	private final AtomicInteger idx = new AtomicInteger(-1);
 	private Logger log = Logger.nullLogger;
-	private boolean slowed = false;
 	
-	public StringFeeder(Path file, boolean slowed) throws IOException {
-		this.slowed = slowed;
+	public StringFeeder(Path file) throws IOException {
 		List<String> l = Files.lines(file, StandardCharsets.UTF_8).toList();
 		list = new ArrayList<String>(l.size() + 1);
 		list.addAll(l);
@@ -57,9 +55,11 @@ public class StringFeeder implements Consumer<OutputStream> {
 				clog.trace("writeline : " + s);
 				log.debug(s);
 				Thread.yield();
-				if(slowed) {
+				
+				int wait = Integer.parseInt(CoTe.properties.get("iowait"));
+				if(wait != 0) {
 					try {
-						Thread.sleep(1000);
+						Thread.sleep(wait);
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
