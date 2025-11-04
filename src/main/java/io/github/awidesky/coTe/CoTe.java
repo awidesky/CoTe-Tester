@@ -31,7 +31,7 @@ import io.github.awidesky.projectPath.JarPath;
 public class CoTe implements AutoCloseable {
 
 	public static final int PROBLEMNUM = 100;
-	private static final long processWaitSeconds = 1000000;
+	private static final long processWaitSeconds = 10;
 	private static File outputDir;
 	public static Map<String, String> properties = new HashMap<>();
 	static {
