@@ -99,7 +99,7 @@ public class CoTe implements AutoCloseable {
 			StringFeeder sf = new StringFeeder(Paths.get(filename));
 			filename = probFile + properties.get("oext");
 			outFile = Files.readAllLines(Paths.get(filename), ProcessIO.getNativeChearset()); //TODO : set charset?
-			try (Logger processOut = logger.withMorePrefix(String.format("[%6s | out] ", probFile.substring(probFile.lastIndexOf(File.separator) + 1)), false);
+			try (Logger processOut = logger.withMorePrefix(String.format("[%4s | out] ", probFile.substring(probFile.lastIndexOf(File.separator) + 1)), false);
 				 Logger processIn = logger.withMorePrefix("[" + probFile.substring(probFile.lastIndexOf(File.separator) + 1) + " | in ] ", false);
 				 StringLogger output = new StringLogger(true);) {
 
@@ -144,8 +144,11 @@ public class CoTe implements AutoCloseable {
 				processOut.close();
 				processIn.close();
 				output.close();
+				if(!diff(outFile.toArray(String[]::new), output.getString().split("\\R"), ioIndexList, sf,
+						logger.withMorePrefix(String.format("[%sdiff] ", probFile.substring(probFile.lastIndexOf(File.separator) + 1)), false)))
+					result = false;
+				
 				logger.newLine(); logger.newLine();
-				if(!diff(outFile.toArray(String[]::new), output.getString().split("\\R"), ioIndexList, sf)) result = false;
 			} catch (IOException | ExecutionException | InterruptedException e) {
 				return new Result(ResultType.RUN_ERROR, new RunErrorException(e, sf.getElementOf(sf.getIndex()), sf.getIndex()));
 			}
@@ -154,31 +157,35 @@ public class CoTe implements AutoCloseable {
 		return new Result(result ? ResultType.CORRECT : ResultType.WRONG_ANSWER, null);
 	}
 
-	private boolean diff(String[] original, String[] prog, List<Integer> ioIndexList, StringFeeder sf) {
+	private boolean diff(String[] original, String[] prog, List<Integer> ioIndexList, StringFeeder sf, Logger difLog) {
 		if(original.length != prog.length) {
-			logger.info(original.length + "!=" + prog.length);
-			logger.info("Program output :");
-			Arrays.stream(prog).forEach(logger::info);
+			difLog.info(original.length + "!=" + prog.length);
+			difLog.info("Program output :");
+			Arrays.stream(prog).forEach(difLog::info);
 			return false;
 		}
 		
 		boolean correct = true;
 		for(int i = 0; i < original.length; i++) {
 			if(!original[i].strip().equals(prog[i].strip())) {
-				logger.info("Wrong answer in Line " + (i + 1));
-				logger.info("Answer :");
-				logger.info(original[i]);
-				logger.info("Output :");
-				logger.info(prog[i]);
-				logger.info("Input line " +(ioIndexList.get(i) + 1) + " is a possible input corresponds to the output :");
-				logger.info("\"" + sf.getElementOf(ioIndexList.get(i)) + "\"");
-				logger.info();
+				difLog.info();
+				difLog.info("Wrong answer in Line " + (i + 1));
+				difLog.info("Answer :");
+				difLog.info(original[i]);
+				difLog.info("Output :");
+				difLog.info(prog[i]);
+				
+				String possibleIn = sf.getElementOf(ioIndexList.get(i));
+				if(!possibleIn.isBlank()) {
+					difLog.info("Input line " + (ioIndexList.get(i) + 1) + " is a possible input corresponds to the output :");
+					difLog.info("\"" + possibleIn + "\"");
+				}
 				correct = false;
 			}
 		}
 		
-		if(correct) logger.info("Correct!");
-		else logger.info("Wrong-answer!");
+		if(correct) difLog.info(ResultType.CORRECT.str());
+		else difLog.info(ResultType.WRONG_ANSWER.str());
 		return correct;
 	}
 	
