@@ -37,7 +37,8 @@ public class CoTe implements AutoCloseable {
 	static {
 		try {
 			Files.lines(Paths.get(JarPath.getProjectPath(CompilerTester.class), "properties.txt"))
-			.filter(s -> s.contains("=")).map(s -> s.split("=")).forEach(arr -> properties.put(arr[0].strip(), arr[1].strip()));
+			.filter(s -> s.contains("=")).filter(s -> !s.startsWith("#"))
+			.map(s -> s.split("=")).forEach(arr -> properties.put(arr[0].strip(), arr[1].strip()));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

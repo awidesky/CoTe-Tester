@@ -1,3 +1,11 @@
+# formmating rule :
+#   replace("@w", week_number)
+#   replace("@W", format("%02d", week_number))
+#   replace("@p", prob_number)
+#   replace("@P", format("%02d", prob_number));
+#   replace("@d", testcase_number)
+#   replace("@D", format("%02d", testcase_number));
+
 root=probs
 
 iodir=IO
