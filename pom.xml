@@ -130,24 +130,6 @@
 							</resources>
 						</configuration>
 					</execution>
-					<execution>
-						<id>copy-probs</id>
-						<phase>package</phase>
-						<goals>
-							<goal>copy-resources</goal>
-						</goals>
-						<configuration>
-							<outputDirectory>${project.build.directory}/build/probs</outputDirectory>
-							<resources>
-								<resource>
-									<directory>${basedir}/probs</directory>
-									<excludes>
-										<exclude>test_codes/*</exclude>
-									</excludes>
-								</resource>
-							</resources>
-						</configuration>
-					</execution>
 				</executions>
 			</plugin>
 		</plugins>
