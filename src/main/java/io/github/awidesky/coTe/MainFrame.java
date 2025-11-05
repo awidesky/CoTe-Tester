@@ -35,7 +35,7 @@ import io.github.awidesky.projectPath.JarPath;
 public class MainFrame extends JFrame {
 
 	private static final long serialVersionUID = 252547593768742341L;
-	public static final String version = "2.0.1";
+	public static final String version = "2.1";
 
 	private static final Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
 	private static File root;
