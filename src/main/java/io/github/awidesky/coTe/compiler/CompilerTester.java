@@ -32,7 +32,7 @@ public class CompilerTester {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		Stream.of("g++", "clang++", "cl.exe").map(PosixCompiler::new).forEach(compilerCandidates::add);
+		Stream.of("g++", "clang++").map(PosixCompiler::new).forEach(compilerCandidates::add);
 	}
 	
 	public static Compiler getCompiler() {
@@ -50,6 +50,7 @@ public class CompilerTester {
 		//"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
 		File vsroot = new File("C:\\Program Files\\Microsoft Visual Studio");
 		if(!vsroot.exists()) {
+			logger.info("Failed to find MSVC compilers!");
 			logger.info(vsroot.getAbsolutePath() + " does not exist!");
 			return List.of();
 		}
@@ -67,12 +68,13 @@ public class CompilerTester {
 
 	private static Compiler findCompiler() {
 		if(compiler != null) return compiler;
+		
+		logger.info("Compiler searching start...");
 		List<Compiler> workingCompilers = compilerCandidates.stream().filter(c -> {
 			String[] command = c.testCommand();
-			logger.info();
-			logger.debug("Testing Compiler with : " + Arrays.stream(command).collect(Collectors.joining(" ")));
-			try(Logger pl = new ConsoleLogger()) {
-				pl.setPrefix("[Compiler test : " + c.getCompilerExecutable() + "] ");
+			logger.newLine();
+			logger.info("Testing Compiler with : " + Arrays.stream(command).collect(Collectors.joining(" ")));
+			try(Logger pl = logger.withMorePrefix("[" + c.getCompilerExecutable() + "] ", false)) {
 				return ProcessExecutor.runNow(pl, new File("."), command) == 0;
 			} catch (InterruptedException | ExecutionException | IOException e) {
 				logger.error(e.getLocalizedMessage());
@@ -80,8 +82,10 @@ public class CompilerTester {
 				return false;
 			}
 		}).toList();
+		
+		logger.newLine();
 		logger.info("Found compilers : " + workingCompilers.stream().map(Compiler::getCompilerExecutable).collect(Collectors.joining(", ")));
-		logger.info(workingCompilers.get(0).getCompilerExecutable() + " will used.");
+		logger.info(workingCompilers.get(0).getCompilerExecutable() + " will be used.");
 		return workingCompilers.get(0);
 	}
 }
