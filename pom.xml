@@ -94,7 +94,7 @@
 					</execution>
 				</executions>
 				<configuration>
-					<outputDirectory>${project.build.directory}/build</outputDirectory>
+					<outputDirectory>${project.build.directory}/CoTe</outputDirectory>
 					<archive>
 						<manifest>
 							<mainClass>io.github.awidesky.coTe.MainFrame</mainClass>
@@ -118,7 +118,7 @@
 							<goal>copy-resources</goal>
 						</goals>
 						<configuration>
-							<outputDirectory>${project.build.directory}/build</outputDirectory>
+							<outputDirectory>${project.build.directory}/CoTe</outputDirectory>
 							<resources>
 								<resource>
 									<directory>${basedir}</directory>
