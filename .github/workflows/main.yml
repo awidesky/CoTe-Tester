@@ -19,7 +19,7 @@ jobs:
           java-version: 17
 
       - name: Build with Maven
-        run: mvn -B package
+        run: mvn -B package -Djava.awt.headless=true
 
       - name: Zip target/build
         run: |
