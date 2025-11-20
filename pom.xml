@@ -123,6 +123,7 @@
 								<resource>
 									<directory>${basedir}</directory>
 									<includes>
+										<include>launcher.sh</include>
 										<include>launcher.bat</include>
 										<include>properties.txt</include>
 										<include>compilers.txt</include>
