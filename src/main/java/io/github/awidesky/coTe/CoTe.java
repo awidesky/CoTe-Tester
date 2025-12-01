@@ -85,7 +85,7 @@ public class CoTe implements AutoCloseable {
 	
 
 	public Result test(File cpp) throws CompileFailedException, IOException {
-		System.out.println("Problem : " + week + "_" + prob + "\twith " + cpp.getAbsolutePath());
+		logger.info("Problem : " + week + "_" + prob + "\twith " + cpp.getAbsolutePath());
 		String out;
 		boolean result = true;
 		try {
@@ -134,8 +134,10 @@ public class CoTe implements AutoCloseable {
 				procIO.setStdin(sf);
 			
 				ProcessHandle handle = ProcessExecutor.run(List.of(out), null, procIO);
-				if(!handle.getProcess().waitFor(processWaitSeconds , TimeUnit.SECONDS))
+				if(!handle.getProcess().waitFor(processWaitSeconds , TimeUnit.SECONDS)) {
+					handle.getProcess().destroyForcibly();
 					return new Result(ResultType.TIME_OUT, new TimeOutException(processWaitSeconds , TimeUnit.SECONDS));
+				}
 				
 				int exitcode = handle.wait_all();
 				processOut.info("Process done with exit code : " + exitcode);
