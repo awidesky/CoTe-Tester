@@ -59,7 +59,8 @@ public class MainFrame extends JFrame {
 		if(getDefaultLogLevel().includes(Level.DEBUG)) SwingDialogs.setLogger(new ConsoleLogger(true));
 
 		jfc.setFileSelectionMode(JFileChooser.FILES_ONLY);
-		jfc.setFileFilter(new FileNameExtensionFilter(".cpp file", "cpp"));
+		jfc.setFileFilter(new FileNameExtensionFilter("C++ file", "cpp", "cc", "cxx", "C"));
+		jfc.addChoosableFileFilter(new FileNameExtensionFilter("C file", "c"));
 		if(lastOpened.exists()) jfc.setCurrentDirectory(getLastOpened());
 		
 		JPanel problemSelection = new JPanel();
@@ -188,13 +189,6 @@ public class MainFrame extends JFrame {
 		CompilerTester.getCompiler();
 
 		root = new File(CoTe.properties.get("root"));
-		if(!root.isAbsolute()) root = new File(JarPath.getProjectPath(MainFrame.class), CoTe.properties.get("root"));
-		try {
-			root = root.getCanonicalFile();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		CoTe.properties.put("root", root.getAbsolutePath());
 		
 		new File(root, CoTe.properties.get("iodir")).mkdirs();
 		new File(root, CoTe.properties.get("outputdir")).mkdirs();
