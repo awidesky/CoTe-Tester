@@ -42,6 +42,15 @@ public class CoTe implements AutoCloseable {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+
+		File root = new File(CoTe.properties.get("root"));
+		if(!root.isAbsolute()) root = new File(JarPath.getProjectPath(MainFrame.class), CoTe.properties.get("root"));
+		try {
+			root = root.getCanonicalFile();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		CoTe.properties.put("root", root.getAbsolutePath());
 		
 		System.out.println("\nProperties :");
 		properties.entrySet().stream().map(e -> "\t" + e.getKey() + " : " + e.getValue()).forEach(System.out::println);
