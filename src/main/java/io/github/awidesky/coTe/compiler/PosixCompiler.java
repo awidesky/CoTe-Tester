@@ -38,10 +38,17 @@ public class PosixCompiler implements Compiler {
 		StringLogger comp_logger = new StringLogger(true);
 		comp_logger.setPrintLogLevel(false);
 		try {
-			if(ProcessExecutor.runNow(comp_logger, new File("."), command.toArray(String[]::new)) != 0) throw new CompileErrorException(comp_logger.getString());
+			if(ProcessExecutor.runNow(comp_logger, new File("."), command.toArray(String[]::new)) != 0) {
+				logger.error("Compile process did not returned 1");
+				logger.error("Compile command :");
+				logger.error(command.stream().collect(Collectors.joining(" ")));
+				throw new CompileErrorException(comp_logger.getString());
+			}
 		} catch (InterruptedException | ExecutionException | IOException e) {
 			logger.error(e);
 			logger.error(comp_logger.getString());
+			logger.error("Compile command :");
+			logger.error(command.stream().collect(Collectors.joining(" ")));
 			SwingDialogs.error("Error while compiling " + cpp, "%e%", e, true);
 			throw new CompileFailedException(e, comp_logger.getString());
 		}
